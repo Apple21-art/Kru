@@ -1,0 +1,43 @@
+pub fn memory_test() -> int {
+
+    let base: int := 42
+
+    let reference := ref base
+
+    let loaded: int := reference@
+
+    pr(base)
+    pr(loaded)
+
+
+    var counter: int := 10
+
+    let mr := mut ref counter
+
+    mr@ = mr@ + 5
+
+    pr(counter)
+
+
+    let outer: int := 900
+    let inner: int := outer + 100
+
+    pr(inner)
+    pr(outer)
+
+
+    let math: int :=
+        ((10 + 20) * (30 - 10)) / 5
+
+    pr(math)
+
+    ret 0
+}
+
+
+
+pub fn main() -> int {
+
+    ret memory_test()
+
+}

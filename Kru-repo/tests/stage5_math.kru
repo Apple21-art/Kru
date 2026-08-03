@@ -1,0 +1,10 @@
+// stage5_math.kru
+// Simple math utilities module.
+
+pub fn double_it(x: i32) -> i32 {
+    ret x + x
+}
+
+pub fn add_one(x: i32) -> i32 {
+    ret x + 1
+}

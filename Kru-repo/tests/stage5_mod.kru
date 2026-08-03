@@ -1,0 +1,16 @@
+// stage5_mod.kru — tests the module import system.
+// 'use math_utils' imports all declarations from math_utils.kru.
+
+use math_utils
+
+pub fn main() -> i32 {
+    // double_it is defined in math_utils.kru
+    pr(double_it(21))
+    pr(add_one(99))
+
+    // Combine imported function with local computation
+    let result := double_it(50)
+    pr(result)
+
+    ret 0
+}

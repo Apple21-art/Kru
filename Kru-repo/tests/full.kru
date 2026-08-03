@@ -1,0 +1,860 @@
+// ============================================================================
+// Kru Full Language Conformance Test
+//
+// Target:
+//     Kru 1.0
+//
+// Purpose:
+//     Exercise every major language feature described in the Kru Codex.
+//
+// This file is NOT expected to compile until the compiler reaches maturity.
+//
+// ============================================================================
+
+
+// ============================================================================
+// PART 1
+// CORE LEXICAL + PRIMITIVES
+// ============================================================================
+
+
+// [CORE]
+
+pub fn primitive_test() -> i32 {
+
+    let signed8: i8 := -8
+    let signed16: i16 := -16
+    let signed32: i32 := -32
+    let signed64: i64 := -64
+    let signed128: i128 := -128
+
+
+    let unsigned8: u8 := 8
+    let unsigned16: u16 := 16
+    let unsigned32: u32 := 32
+    let unsigned64: u64 := 64
+    let unsigned128: u128 := 128
+
+
+    let machine_a: usize := 1024
+    let machine_b: isize := -1024
+
+
+    let float_a: f32 := 3.14f32
+    let float_b: f64 := 6.28f64
+
+
+    let boolean_true: bool := true
+    let boolean_false: bool := false
+
+
+    let character: char := 'A'
+
+
+    let hex_value: i32 := 0xFF
+    let binary_value: i32 := 0b101010
+    let octal_value: i32 := 0o777
+
+
+    let readable_number: i64 := 1_000_000
+
+
+    pr(signed64)
+    pr(unsigned64)
+
+
+    ret 0
+}
+
+
+
+
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
+
+// [COMPTIME]
+
+const MAX_USERS: i32 := 100
+
+
+comptime {
+
+    let generated_value := 50
+
+}
+
+
+
+
+comptime fn compile_add(
+    a: i32,
+    b: i32
+)
+-> i32
+{
+
+    ret a + b
+
+}
+
+
+
+// ============================================================================
+// TYPE ALIASES
+// ============================================================================
+
+
+// [TYPE]
+
+type UserID := u64
+
+type Score := i32
+
+
+
+
+pub fn alias_test()
+-> i32
+{
+
+    let id: UserID := 100
+
+    let score: Score := 900
+
+
+    pr(id)
+    pr(score)
+
+
+    ret 0
+}
+
+
+
+
+
+// ============================================================================
+// MUTABILITY
+// ============================================================================
+
+
+// [CORE]
+
+
+pub fn mutation_test()
+-> i32
+{
+
+    let immutable := 10
+
+
+    var mutable := 20
+
+
+    mutable = 30
+
+
+    pr(mutable)
+
+
+    ret 0
+
+}
+
+
+
+
+
+// ============================================================================
+// EXPRESSIONS
+// ============================================================================
+
+
+// [CORE]
+
+pub fn expression_test()
+-> i32
+{
+
+
+    let arithmetic :=
+        ((10 + 20) * 30)
+        -
+        ((50 / 5) % 3)
+
+
+
+    let compare :=
+        10 < 20
+
+
+    let logical :=
+        true && false || true
+
+
+    let bitwise :=
+        (1 << 4) | 2
+
+
+
+    pr(arithmetic)
+    pr(compare)
+    pr(logical)
+    pr(bitwise)
+
+
+    ret 0
+
+}
+
+
+
+
+
+// ============================================================================
+// FUNCTIONS
+// ============================================================================
+
+
+// [CORE]
+
+
+fn add(
+    a: i32,
+    b: i32
+)
+-> i32
+{
+
+    ret a + b
+
+}
+
+
+
+
+
+pub fn function_test()
+-> i32
+{
+
+    let result :=
+        add(
+            10,
+            20
+        )
+
+
+    pr(result)
+
+
+    ret 0
+
+}
+
+
+
+
+
+// ============================================================================
+// BLOCK EXPRESSIONS
+// ============================================================================
+
+
+// [CORE/FUTURE]
+
+
+pub fn block_test()
+-> i32
+{
+
+
+    let value :=
+    {
+
+        let a := 10
+
+        let b := 20
+
+
+        a + b
+
+    }
+
+
+    pr(value)
+
+
+    ret 0
+
+}
+
+
+
+
+
+// ============================================================================
+// MEMORY MODEL
+// ============================================================================
+
+
+// [MEM]
+
+
+pub fn reference_test()
+-> i32
+{
+
+
+    let value := 42
+
+
+    let reference :=
+        ref value
+
+
+    let loaded :=
+        reference@
+
+
+
+    pr(value)
+
+    pr(loaded)
+
+
+    ret 0
+
+}
+
+
+
+
+
+// [MEM]
+
+
+pub fn mutable_reference_test()
+-> i32
+{
+
+    var value := 10
+
+
+    let reference :=
+        mut ref value
+
+
+
+    reference@ = 20
+
+
+
+    pr(value)
+
+
+
+    ret 0
+
+}
+
+
+
+
+
+// ============================================================================
+// ARENAS
+// ============================================================================
+
+
+// [MEM]
+
+
+pub fn arena_test()
+-> i32
+{
+
+
+    arena temp
+    {
+
+
+        let value := 100
+
+
+        pr(value)
+
+
+    }
+
+
+    ret 0
+
+}
+
+
+
+
+
+// ============================================================================
+// STRUCTS
+// ============================================================================
+
+
+// [TYPE]
+
+
+struct User
+{
+
+    id: u64
+
+    age: u32
+
+}
+
+
+
+
+struct Empty {}
+
+
+
+
+struct Color(
+    u8,
+    u8,
+    u8
+)
+
+
+
+
+pub fn struct_test()
+-> i32
+{
+
+
+    let user :=
+        User
+        {
+            id := 1,
+            age := 20
+        }
+
+
+
+    pr(user.id)
+
+
+    ret 0
+
+}
+
+
+
+
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+
+// [TYPE]
+
+
+enum ResultCode
+{
+
+    Ok
+
+    Failed
+
+}
+
+
+
+
+
+enum Message
+{
+
+    Text(str)
+
+    Number(i64)
+
+}
+
+
+
+
+
+pub fn enum_test()
+-> i32
+{
+
+    let state :=
+        ResultCode.Ok
+
+
+
+    match state
+    {
+
+        ResultCode.Ok =>
+        {
+            pr(1)
+        }
+
+
+        ResultCode.Failed =>
+        {
+            pr(0)
+        }
+
+    }
+
+
+
+    ret 0
+
+}
+
+
+
+
+
+// ============================================================================
+// MATCHING
+// ============================================================================
+
+
+// [TYPE]
+
+
+pub fn match_test()
+-> i32
+{
+
+    let value := 10
+
+
+
+    match value
+    {
+
+        0 =>
+        {
+            pr(0)
+        }
+
+
+        x =>
+        {
+            pr(x)
+        }
+
+    }
+
+
+
+    ret 0
+
+}
+
+
+
+
+
+// ============================================================================
+// GENERICS
+// ============================================================================
+
+
+// [GENERIC]
+
+
+fn identity<T>(
+    value: T
+)
+-> T
+{
+
+    ret value
+
+}
+
+
+
+
+
+pub fn generic_test()
+-> i32
+{
+
+    let number :=
+        identity<i32>(100)
+
+
+
+    pr(number)
+
+
+    ret 0
+
+}
+
+
+
+
+
+// ============================================================================
+// TRAITS
+// ============================================================================
+
+
+// [UNIMPL]
+
+
+trait Printable
+{
+
+    fn print(
+        ref self
+    )
+
+}
+
+
+
+
+
+impl Printable for User
+{
+
+    fn print(
+        ref self
+    )
+    {
+
+        pr(self.id)
+
+    }
+
+}
+
+
+
+
+
+// ============================================================================
+// OPTION / RESULT
+// ============================================================================
+
+
+// [UNIMPL]
+
+
+pub fn error_test()
+-> Result<i32,str>
+{
+
+    ret Ok(100)
+
+}
+
+
+
+
+
+pub fn option_test()
+-> Option<i32>
+{
+
+    ret Some(10)
+
+}
+
+
+
+
+
+// ============================================================================
+// LOOPS
+// ============================================================================
+
+
+// [CORE/FUTURE]
+
+
+pub fn loop_test()
+-> i32
+{
+
+    var i := 0
+
+
+    loop
+    {
+
+        i = i + 1
+
+
+        if i > 10
+        {
+            break
+        }
+
+    }
+
+
+
+    ret i
+
+}
+
+
+
+
+
+// ============================================================================
+// COMPTIME GENERATION
+// ============================================================================
+
+
+// [COMPTIME]
+
+
+comptime fn generate_number()
+-> i32
+{
+
+    ret 123
+
+}
+
+
+
+
+
+const GENERATED := generate_number()
+
+
+
+
+
+// ============================================================================
+// SECURITY FEATURES
+// ============================================================================
+
+
+// [SECURITY]
+
+
+secure struct Password
+{
+
+    data: str
+
+}
+
+
+
+
+
+pub fn secure_test()
+-> i32
+{
+
+    let secret :=
+        Password
+        {
+            data := "hidden"
+        }
+
+
+
+    ret 0
+
+}
+
+
+
+
+
+// ============================================================================
+// KRU-X COMPATIBILITY MARKERS
+// ============================================================================
+
+
+// [KRUX ONLY]
+//
+// component Button
+//
+// {
+//     text: str
+// }
+//
+//
+// impl Button
+// {
+//
+//     fn render(ref self)
+//     {
+//
+//     }
+//
+// }
+
+
+
+// ============================================================================
+// MASTER TEST
+// ============================================================================
+
+
+pub fn main()
+-> i32
+{
+
+
+    primitive_test()
+
+    alias_test()
+
+    mutation_test()
+
+    expression_test()
+
+    function_test()
+
+    block_test()
+
+    reference_test()
+
+    mutable_reference_test()
+
+    arena_test()
+
+    struct_test()
+
+    enum_test()
+
+    match_test()
+
+    generic_test()
+
+    loop_test()
+
+    secure_test()
+
+
+
+    pr(999)
+
+
+    ret 0
+
+}

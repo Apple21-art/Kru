@@ -1,0 +1,220 @@
+// ============================================================
+//
+// Kru Benchmark
+//
+// Tests:
+//   - arithmetic
+//   - operator precedence
+//   - recursion
+//   - iteration
+//   - branching
+//   - nested loops
+//   - assignments
+//   - function calls
+//
+// Expected:
+//   Prints deterministic values.
+//
+// ============================================================
+
+
+// ------------------------------------------------------------
+// Recursive Fibonacci
+// ------------------------------------------------------------
+
+fn fib(
+    n: int
+)
+-> int
+{
+    if n <= 1
+    {
+        ret n
+    }
+
+    ret fib(n - 1) + fib(n - 2)
+}
+
+
+// ------------------------------------------------------------
+// Recursive Factorial
+// ------------------------------------------------------------
+
+fn fact(
+    n: int
+)
+-> int
+{
+    if n <= 1
+    {
+        ret 1
+    }
+
+    ret n * fact(n - 1)
+}
+
+
+// ------------------------------------------------------------
+// Euclidean GCD
+// ------------------------------------------------------------
+
+fn gcd(
+    a: int,
+    b: int
+)
+-> int
+{
+    var x: int := a
+    var y: int := b
+
+    loop
+    {
+        if y == 0
+        {
+            break
+        }
+
+        let t: int := x % y
+
+        x = y
+        y = t
+    }
+
+    ret x
+}
+
+
+// ------------------------------------------------------------
+// Arithmetic Stress
+// ------------------------------------------------------------
+
+fn arithmetic()
+-> int
+{
+    var total: int := 0
+    var i: int := 1
+
+    loop
+    {
+        if i > 100
+        {
+            break
+        }
+
+        total =
+            total +
+            ((i * 7 + 13) % 17) -
+            ((i * 5) % 9)
+
+        i = i + 1
+    }
+
+    ret total
+}
+
+
+// ------------------------------------------------------------
+// Nested Loop Stress
+// ------------------------------------------------------------
+
+fn nested()
+-> int
+{
+    var sum: int := 0
+
+    var i: int := 0
+
+    loop
+    {
+        if i >= 50
+        {
+            break
+        }
+
+        var j: int := 0
+
+        loop
+        {
+            if j >= 50
+            {
+                break
+            }
+
+            sum =
+                sum +
+                ((i * j + j) % 13)
+
+            j = j + 1
+        }
+
+        i = i + 1
+    }
+
+    ret sum
+}
+
+
+// ------------------------------------------------------------
+// Prime Counter
+// ------------------------------------------------------------
+
+fn primes()
+-> int
+{
+    var count: int := 0
+    var n: int := 2
+
+    loop
+    {
+        if n > 500
+        {
+            break
+        }
+
+        var prime: int := 1
+        var d: int := 2
+
+        loop
+        {
+            if d * d > n
+            {
+                break
+            }
+
+            if (n % d) == 0
+            {
+                prime = 0
+                break
+            }
+
+            d = d + 1
+        }
+
+        if prime == 1
+        {
+            count = count + 1
+        }
+
+        n = n + 1
+    }
+
+    ret count
+}
+
+
+// ------------------------------------------------------------
+// Main
+// ------------------------------------------------------------
+
+pub fn main()
+-> int
+{
+    pr(fib(20))          // 6765
+    pr(fact(10))         // 3628800
+    pr(gcd(1071, 462))   // 21
+    pr(arithmetic())     // deterministic
+    pr(nested())         // deterministic
+    pr(primes())         // 95
+
+    ret 0
+}
