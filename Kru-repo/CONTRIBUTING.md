@@ -3,11 +3,19 @@
 Kru is an early-alpha personal project, so the workflow here is intentionally
 lightweight.
 
+## A note on repo contents
+
+Every file in this project — compiler source, headers, tests, build driver —
+is committed and uploaded in full, inside its proper folder. Nothing is
+partial, trimmed, or left out. If you want to check how something works,
+verify a claim in the README, or just read the code, the actual file is
+there for you to open; you don't have to take anything on faith.
+
 ## Getting set up
 
 ```bash
 git clone https://github.com/Apple21-art/Kru.git
-cd kru
+cd Kru
 chmod +x kru0
 ./kru0 test
 ```
