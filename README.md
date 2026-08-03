@@ -1,14 +1,14 @@
-# Kru
+**Kru**
 
 Kru is a small, statically-typed systems programming language that compiles to C.
-It's a personal project exploring compiler design — lexing, parsing, semantic
-analysis, and code generation — built from scratch in C with no external
-dependencies beyond a C compiler.
+It's a personal project where I'm exploring how compilers actually work - lexing,
+parsing, semantic analysis, code generation, all of it built from scratch in C
+with no external dependencies besides a C compiler.
 
 > **Status: ALPHA-1.** The core language (functions, control flow, structs,
 > enums, generics, traits, references, arenas, modules) works and is tested.
-> Some newer features (multi-value returns, a few `stage5` standard-library
-> paths) are still in progress — see [Known Issues](#known-issues) below.
+> Some newer features (multi-value returns, a few `stage5` standard library
+> paths) are still in progress - see [Known Issues](#known-issues) below.
 
 ```kru
 pub fn main() -> int
@@ -17,39 +17,40 @@ pub fn main() -> int
 }
 ```
 
-## Why Kru?
+Why Kru?:
 
-This project exists to answer a question: what does it actually take to build
-a compiler from raw source text to a running native binary? Kru is the answer
-— a hand-written lexer, recursive-descent parser, semantic analysis pass, and
-a C code generator, wired together by a small build driver (`kru0`).
+I wanted to actually understand what it takes to go from raw source text to a
+running native binary, not just read about it. Kru is that project - a
+hand-written lexer, a recursive-descent parser, a semantic analysis pass, and
+a C code generator, all wired together by a small build driver (`kru0`). Also,
+the name Kru is cool and I wanted an excuse to use it.
 
-## Features
+Features:
 
-- **Static typing** with primitive types (`int`, `i8`–`i64`, `u8`–`u64`, `f32`,
+- **Static typing** with primitive types (`int`, `i8`-`i64`, `u8`-`u64`, `f32`,
   `f64`, `bool`, `str`, `char`) and type aliases
 - **Structs and enums**, including struct literals and field access
 - **Generics and traits**, monomorphized at each call site, with `impl` blocks
   and `#[derive(...)]` attributes (`Copy`, `Clone`, `PartialEq`, `Debug`)
 - **References and mutability**: `ref`, `mut ref`, and explicit dereference (`@`)
-- **Arena allocation** via `arena { ... }` blocks, alongside `unsafe` raw
-  pointers and manual `mem_alloc` / `mem_free` / `mem_realloc`
+- **Arena allocation** via `arena { ... }` blocks, plus `unsafe` raw pointers
+  and manual `mem_alloc` / `mem_free` / `mem_realloc` if you need them
 - **`Option<T>` / `Result<T, E>`** with `?`-operator error propagation
 - **Modules** (`use kru_io`, `use kru_env`, `use kru_mem`, ...) for I/O,
   environment access, and memory management
-- **Full operator set** — arithmetic, comparison, logical, bitwise, shifts —
+- **Full operator set** - arithmetic, comparison, logical, bitwise, shifts -
   with C-compatible precedence
 - **Control flow**: `if` / `else if` / `else`, `while`, `loop`, `break`,
   `continue`, `for ... in a..b`
-- Compiles to portable C, then to a native binary via `gcc`
+- Compiles down to plain C, then to a native binary via `gcc`
 
-## Quick Start
+Quick Start:
 
-You'll need `gcc` and `bash` (Linux/macOS; WSL on Windows).
+You'll need `gcc` and `bash` (Linux/macOS, or WSL on Windows).
 
 ```bash
-git clone https://github.com/<your-username>/kru.git
-cd kru
+git clone https://github.com/Apple21-art/Kru.git
+cd Kru
 chmod +x kru0
 
 # Compile and run a Kru program in one step
@@ -57,7 +58,7 @@ chmod +x kru0
 ```
 
 The first run builds the Kru compiler itself (`kru0_bin`) from the sources in
-`src/`, caches it, and reuses the cached binary on subsequent runs unless the
+`src/`, caches it, and reuses that cached binary on later runs unless the
 compiler sources change.
 
 ### Other commands
@@ -73,25 +74,25 @@ compiler sources change.
 ./kru0 test
 ```
 
-## How it works
+How it works:
 
-Kru doesn't generate machine code directly — it transpiles to C, which is
-then compiled with `gcc`. The pipeline is:
+Kru doesn't generate machine code directly. It transpiles to C first, and
+that gets compiled with `gcc`. The pipeline looks like this:
 
 ```
-source.kru → [lexer] → tokens → [parser] → AST → [sema] → checked AST
-           → [codegen] → generated C → gcc → native binary
+source.kru -> [lexer] -> tokens -> [parser] -> AST -> [sema] -> checked AST
+            -> [codegen] -> generated C -> gcc -> native binary
 ```
 
 | Stage | File | Responsibility |
 |---|---|---|
-| Lexer | `src/lexer.c` | Source text → token stream |
-| Parser | `src/parse.c` | Tokens → AST (recursive descent) |
+| Lexer | `src/lexer.c` | Source text -> token stream |
+| Parser | `src/parse.c` | Tokens -> AST (recursive descent) |
 | Semantic analysis | `src/sema.c` | Type checking, name resolution |
-| Codegen | `src/codegen.c` | AST → C source |
+| Codegen | `src/codegen.c` | AST -> C source |
 | Driver | `kru0` | Orchestrates build/transpile/compile/run/test |
 
-## Project layout
+Project layout:
 
 ```
 Kru/
@@ -101,9 +102,9 @@ Kru/
 └── tests/          # .kru conformance tests, run via `./kru0 test`
 ```
 
-## Language tour
+Language Rundown:
 
-A slightly larger example, showing structs, generics, and traits:
+A bigger example, showing structs, generics, and traits:
 
 ```kru
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -156,47 +157,46 @@ fn arena_test() -> i32 {
 }
 ```
 
-More examples live in [`tests/`](./tests) — they double as the conformance
+More examples live in [`tests/`](./tests). They double as the conformance
 suite and as a rough guide to what's currently supported.
 
-## Testing
+Testing:
 
 ```bash
 ./kru0 test
 ```
 
-This compiles and runs every `.kru` file in `tests/`, reporting a pass/fail
-summary. As of this ALPHA-1 release, most core-language tests pass; some
-`stage5` tests targeting newer standard-library and multi-value-return
-features are still failing (see below) and are being worked on.
+This compiles and runs every `.kru` file in `tests/` and prints a pass/fail
+summary. As of ALPHA-1, most core-language tests pass. Some `stage5` tests
+that target newer standard library and multi-value-return features are still
+failing (see below), and I'm actively working through them.
 
-## Known Issues
-
-This is an alpha release. Known gaps, tracked for upcoming versions:
+Known Issues:
+This is an alpha release, so there are gaps I'm still closing:
 
 - A handful of `stage5_*` tests (arrays, mod, strings, errors, core, math)
-  fail to parse — these exercise standard-library modules (`kru_io`,
-  `kru_env`, `kru_mem`, `kru_result`, `kru_option`) and syntax that's still
-  being finalized.
-- No formal language specification yet — the `tests/` directory is currently
-  the closest thing to one.
-- Error messages are functional but not yet polished for readability.
+  fail to parse. These exercise standard library modules (`kru_io`,
+  `kru_env`, `kru_mem`, `kru_result`, `kru_option`) and some syntax that's
+  still being finalized.
+- No formal language spec yet. Right now the `tests/` directory is the
+  closest thing to one.
+- Error messages work but aren't polished yet.
 
-Bug reports and issues are welcome — this is an active work in progress.
+Bug reports and issues are welcome. This is still very much in progress.
 
-## Roadmap
+Roadmap:
 
-- [ ] Finish standard-library module support (`kru_io`, `kru_env`, `kru_mem`)
+- [ ] Finish standard library module support (`kru_io`, `kru_env`, `kru_mem`)
 - [ ] Multi-value returns
-- [ ] Improve diagnostics (better error spans, suggestions)
+- [ ] Better diagnostics (clearer error spans, suggestions)
 - [ ] Self-hosting: rewrite the compiler in Kru itself
-- [ ] Formal grammar / language specification
+- [ ] Formal grammar / language spec
 
-## License
+License:
 
 See [LICENSE](./LICENSE).
 
-## Acknowledgments
+Acknowledgments:
 
-Built as an independent project / science fair submission exploring compiler
-construction from the ground up.
+Built as an independent project and science fair submission, exploring
+compiler construction from the ground up.
