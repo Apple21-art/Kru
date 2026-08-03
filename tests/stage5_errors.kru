@@ -1,0 +1,63 @@
+// stage5_errors.kru
+// Tests: Option<T>, Result<T, E>, ? operator, simple error paths.
+
+use kru_result
+use kru_option
+use kru_io
+
+fn maybe_div(a: i32, b: i32) -> kru_option::Option<i32> {
+    if b == 0 {
+        ret kru_option::None
+    }
+    ret kru_option::Some(a / b)
+}
+
+fn div_with_check(a: i32, b: i32) -> kru_result::Result<i32, str> {
+    if b == 0 {
+        ret kru_result::Err("division by zero")
+    }
+    ret kru_result::Ok(a / b)
+}
+
+fn option_chain() -> kru_option::Option<i32> {
+    let x: i32 = maybe_div(10, 2)?
+    let y: i32 = maybe_div(x, 1)?
+    ret kru_option::Some(y)
+}
+
+fn result_chain() -> kru_result::Result<i32, str> {
+    let x: i32 = div_with_check(10, 2)?
+    let y: i32 = div_with_check(x, 1)?
+    ret kru_result::Ok(y)
+}
+
+fn file_errors() -> kru_result::Result<i32, kru_io::IoError> {
+    let h: kru_io::FileHandle = kru_io::file_open("nonexistent.kru")?
+    let _c: str = kru_io::file_read(mut ref h)?
+    kru_io::file_close(mut ref h)?
+    ret kru_result::Ok(0)
+}
+
+pub fn main() -> i32 {
+    match option_chain() {
+        kru_option::Some(v) => pr(v),
+        kru_option::None => pr(-1),
+    }
+
+    match result_chain() {
+        kru_result::Ok(v) => pr(v),
+        kru_result::Err(_) => {
+            pr(-99)
+        }
+    }
+
+    match file_errors() {
+        kru_result::Ok(code) => pr(code),
+        kru_result::Err(_) => {
+            // Expected for nonexistent file
+            pr(-2)
+        }
+    }
+
+    ret 0
+}

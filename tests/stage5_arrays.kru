@@ -1,0 +1,21 @@
+// stage5_arrays.kru
+// Tests: [T; N], indexing, .len(), slices.
+
+fn array_test() -> i32 {
+    let arr: [i32; 4] = [10, 20, 30, 40]
+    pr(arr.len()) // 4
+
+    pr(arr[0]) // 10
+    pr(arr[3]) // 40
+
+    let rs: ref [i32] = ref arr
+    pr(rs.len()) // 4
+    pr(rs[1])    // 20
+
+    ret 0
+}
+
+pub fn main() -> i32 {
+    array_test()
+    ret 0
+}

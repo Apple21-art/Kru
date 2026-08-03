@@ -1,0 +1,135 @@
+// stage5_core.kru
+// Tests: ref/mut ref, arena, *T + null, mem_alloc/free/realloc,
+//        kru::io (file_open/read/write/close), kru::env (args),
+//        basic module use.
+
+use kru_io
+use kru_env
+use kru_mem
+use kru_result
+use kru_option
+
+// ---------------------------------------------------------------------------
+// References and mutability
+// ---------------------------------------------------------------------------
+
+fn ref_test() -> i32 {
+    var x: i32 := 10
+    let rx: ref i32 := ref x
+    let mr: mut ref i32 := mut ref x
+
+    mr@ = 20
+    pr(rx@) // 20
+
+    ret 0
+}
+
+// ---------------------------------------------------------------------------
+// Arena allocation
+// ---------------------------------------------------------------------------
+
+fn arena_test() -> i32 {
+    arena {
+        var v: i32 := 42
+        let rv: ref i32 := ref v
+
+        pr(rv@) // 42
+
+        var sum: i32 := 0
+        for i in 0..10 {
+            sum = sum + i
+        }
+        pr(sum) // 45
+    }
+
+    ret 0
+}
+
+// ---------------------------------------------------------------------------
+// Raw pointers and heap (unsafe)
+// ---------------------------------------------------------------------------
+
+unsafe fn pointer_and_heap_test() -> i32 {
+    let p: *u8 := kru_mem::alloc(4)
+    if p == null {
+        ret -1
+    }
+
+    let pi: *i32 := p as *i32
+    pi@ = 123
+    let v: i32 := pi@
+    pr(v) // 123
+
+    let p2: *u8 := kru_mem::realloc(p, 8)
+    if p2 == null {
+        ret -1
+    }
+    let pi2: *i32 := p2 as *i32
+
+    let v2: i32 := pi2@
+    pr(v2) // 123 (or whatever your realloc does)
+
+    kru_mem::free(p2)
+
+    let np: *i32 := null
+    if np == null {
+        pr(0)
+    }
+
+    ret 0
+}
+
+// ---------------------------------------------------------------------------
+// File I/O via kru_io, using Result and ?
+// ---------------------------------------------------------------------------
+
+fn file_io_test() -> kru_result::Result<i32, kru_io::IoError> {
+    let w: kru_io::FileHandle = kru_io::file_open_write("stage5_out.txt")?
+    kru_io::file_write(mut ref w, "stage5 file write")?
+    kru_io::file_close(mut ref w)?
+
+    let r: kru_io::FileHandle = kru_io::file_open("stage5_out.txt")?
+    let content: str = kru_io::file_read(mut ref r)?
+    kru_io::file_close(mut ref r)?
+
+    pr(kru_io::str_len(ref content))
+    pr(kru_env::args_count())
+
+    if kru_env::args_count() > 1 {
+        match kru_env::args_get(1) {
+            kru_option::Some(arg) => {
+                pr(kru_io::str_len(ref arg))
+            }
+            kru_option::None => {}
+        }
+    }
+
+    ret kru_result::Ok(0)
+}
+
+// ---------------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------------
+
+pub fn main() -> i32 {
+    ref_test()
+    arena_test()
+
+    let rc := unsafe { pointer_and_heap_test() }
+    if rc != 0 {
+        pr(rc)
+        ret 1
+    }
+
+    match file_io_test() {
+        kru_result::Ok(code) => {
+            pr(code)
+        }
+        kru_result::Err(_) => {
+            pr(-99)
+            ret 1
+        }
+    }
+
+    ret 0
+}

@@ -1,0 +1,99 @@
+// generics_traits.kru — Tests: generics, monomorphization, trait bounds,
+// derive attribute, Copy trait, impl blocks, struct destructuring
+
+#[derive(Copy, Clone, PartialEq, Debug)]
+struct Point {
+    x: i32
+    y: i32
+}
+
+trait Shape {
+    fn area(self) -> i32
+    fn name(ref self) -> str
+}
+
+impl Shape for Point {
+    fn area(self) -> i32 {
+        ret 0  // a point has no area
+    }
+
+    fn name(ref self) -> str {
+        ret "Point"
+    }
+}
+
+struct Rectangle {
+    width: i32
+    height: i32
+}
+
+impl Shape for Rectangle {
+    fn area(self) -> i32 {
+        ret self.width * self.height
+    }
+
+    fn name(ref self) -> str {
+        ret "Rectangle"
+    }
+}
+
+// Generic function with trait bound — monomorphized at each call site
+fn print_area<T: Shape>(shape: T) {
+    pr(fmt("{0} area: {1}", shape.name(), shape.area()))
+}
+
+// Generic with multiple trait bounds
+fn larger_area<T: Shape>(a: T, b: T) -> i32 {
+    let area_a := a.area()
+    let area_b := b.area()
+    if area_a > area_b {
+        ret area_a
+    }
+    ret area_b
+}
+
+// Test: struct destructuring in match
+fn classify_point(p: Point) -> str {
+    match p {
+        Point { x: 0, y: 0 } => { ret "origin" }
+        Point { x: 0, y: _ } => { ret "on y-axis" }
+        Point { x: _, y: 0 } => { ret "on x-axis" }
+        Point { x, y } => { ret fmt("({0}, {1})", x, y) }
+    }
+}
+
+// Test: closures with explicit capture lists
+fn make_multiplier(factor: i32) -> fn(i32) -> i32 {
+    // Capture factor by value (immutable copy)
+    ret fn(x: i32) -> i32 [factor] {
+        ret x * factor
+    }
+}
+
+// Test: type aliases and const
+const MAX_SHAPES: u32 := 100
+type ShapeList := [Rectangle; 10]
+
+pub fn main() -> i32 {
+    let origin := Point { x: 0, y: 0 }
+    let corner := Point { x: 3, y: 4 }
+    let rect := Rectangle { width: 10, height: 5 }
+
+    // Monomorphization generates print_area__Point and print_area__Rectangle
+    print_area(origin)
+    print_area(rect)
+
+    let bigger := larger_area(corner, origin)
+    pr(fmt("Larger area: {0}", bigger))
+
+    // Test struct destructuring
+    pr(classify_point(origin))
+    pr(classify_point(Point { x: 0, y: 5 }))
+    pr(classify_point(Point { x: 7, y: 7 }))
+
+    // Test closure
+    let triple := make_multiplier(3)
+    pr(fmt("triple(5) = {0}", triple(5)))
+
+    ret 0
+}
