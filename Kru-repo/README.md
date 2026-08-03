@@ -48,8 +48,8 @@ a C code generator, wired together by a small build driver (`kru0`).
 You'll need `gcc` and `bash` (Linux/macOS; WSL on Windows).
 
 ```bash
-git clone https://github.com/<your-username>/kru.git
-cd kru
+git clone https://github.com/Apple21-art/Kru.git
+cd Kru
 chmod +x kru0
 
 # Compile and run a Kru program in one step
