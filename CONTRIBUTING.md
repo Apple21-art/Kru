@@ -6,7 +6,7 @@ lightweight.
 ## Getting set up
 
 ```bash
-git clone https://github.com/<your-username>/kru.git
+git clone https://github.com/Apple21-art/Kru.git
 cd kru
 chmod +x kru0
 ./kru0 test
