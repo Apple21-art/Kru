@@ -96,7 +96,7 @@ struct ASTNode
     uint32_t name_len;
 
 
-    int64_t int_val;
+    uint64_t int_val; /* widened from int64_t: u64 literals can exceed INT64_MAX */
 
     double float_val;
 

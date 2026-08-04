@@ -122,7 +122,8 @@ static void error(
     K1001: invalid assignment target
     K1002: expected expression
     K1003: expected variable name
-    K1004: expected type name
+    K1036: expected type name (renumbered from K1004; K1004 is reserved
+           for "cannot modify immutable binding", raised in sema.c)
     K1005: let requires initializer
     K1006: var requires type or initializer
     K1007: expected '}'
@@ -182,7 +183,7 @@ static void expect(
     overflow instead of wrapping/truncating silently.
 */
 
-static int64_t parse_kru_int_literal(
+static uint64_t parse_kru_int_literal(
     const char* start,
     uint32_t length,
     bool* out_overflow
@@ -259,15 +260,11 @@ static int64_t parse_kru_int_literal(
     }
 
 
-    if(value > (uint64_t)INT64_MAX)
-        overflow = true;
-
-
     if(out_overflow)
         *out_overflow = overflow;
 
 
-    return (int64_t)value;
+    return value;
 }
 
 
@@ -406,7 +403,7 @@ static ASTNode* parse_type(Parser* p)
         {
             error(
                 p,
-                "K1004: expected type name"
+                "K1036: expected type name"
                 );
 
             return NULL;
@@ -418,7 +415,7 @@ static ASTNode* parse_type(Parser* p)
             "K1031: expected ';' in array type"
             );
 
-        int64_t length = 0;
+        uint64_t length = 0;
 
         if(check(p,TOKEN_INT_LIT))
         {
@@ -533,7 +530,7 @@ static ASTNode* parse_const(Parser* p)
         {
             error(
                 p,
-                "K1004: expected type name"
+                "K1036: expected type name"
                 );
         }
     }
@@ -603,7 +600,7 @@ static ASTNode* parse_type_alias(Parser* p)
     {
         error(
             p,
-            "K1004: expected type name"
+            "K1036: expected type name"
             );
     }
 
@@ -753,12 +750,12 @@ static ASTNode* parse_primary(
             case '\\':  node->int_val = '\\'; break;
             case '\'':  node->int_val = '\''; break;
             case '"':  node->int_val = '"'; break;
-            default:   node->int_val = tok.start[2]; break;
+            default:   node->int_val = (uint64_t)(unsigned char)tok.start[2]; break;
             }
         }
         else if(tok.length >= 2)
         {
-            node->int_val = tok.start[1];
+            node->int_val = (uint64_t)(unsigned char)tok.start[1];
         }
 
 
@@ -1621,7 +1618,7 @@ static ASTNode* parse_variable(
         {
             error(
                 p,
-                "K1004: expected type name"
+                "K1036: expected type name"
                 );
         }
     }
@@ -2421,7 +2418,7 @@ static ASTNode* parse_struct(Parser* p)
                 {
                     error(
                         p,
-                        "K1004: expected type name"
+                        "K1036: expected type name"
                         );
                 }
             }
@@ -2777,7 +2774,7 @@ static ASTNode* parse_function(
             {
                 error(
                     p,
-                    "K1004: expected type name"
+                    "K1036: expected type name"
                     );
             }
         }
@@ -2814,7 +2811,7 @@ static ASTNode* parse_function(
         {
             error(
                 p,
-                "K1004: expected type name"
+                "K1036: expected type name"
                 );
         }
     }

@@ -356,7 +356,7 @@ static int analyze(ASTNode* node)
         {
             fprintf(
                 stderr,
-                "[kru error] K3002: '%.*s' is already declared in this scope at %u:%u\n",
+                "[kru error] K1037: '%.*s' is already declared in this scope at %u:%u\n",
                 node->name_len,
                 node->name,
                 node->line,
@@ -392,7 +392,7 @@ static int analyze(ASTNode* node)
         {
             fprintf(
                 stderr,
-                "[kru error] K3002: '%.*s' is already declared in this scope at %u:%u\n",
+                "[kru error] K1037: '%.*s' is already declared in this scope at %u:%u\n",
                 node->name_len,
                 node->name,
                 node->line,
@@ -441,7 +441,7 @@ static int analyze(ASTNode* node)
                 {
                     fprintf(
                         stderr,
-                        "[kru error] K3001: immutable assignment '%.*s' at %u:%u\n",
+                        "[kru error] K1004: cannot modify immutable binding '%.*s' at %u:%u\n",
                         target->name_len,
                         target->name,
                         target->line,
@@ -504,7 +504,7 @@ static int analyze(ASTNode* node)
             {
                 fprintf(
                     stderr,
-                    "[kru error] K3003: '%.*s' used before it is initialized at %u:%u\n",
+                    "[kru error] K1038: '%.*s' used before it is initialized at %u:%u\n",
                     node->name_len,
                     node->name,
                     node->line,

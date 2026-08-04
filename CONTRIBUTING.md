@@ -13,6 +13,7 @@ chmod +x kru0
 ```
 
 You'll need `gcc` and `bash`.
+Perhaps 'clang' as well, depending if i change too much up.
 
 ## Making changes
 

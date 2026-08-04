@@ -153,11 +153,33 @@ static bool codegen_check_int_range(
     const char* name = type_node->name;
     uint32_t len = type_node->name_len;
 
-    int64_t v = negate ? -(lit->int_val) : lit->int_val;
+    /*
+        int_val is now a uint64_t magnitude (widened so u64/usize
+        literals up to UINT64_MAX are representable at all -- they
+        used to be silently impossible above INT64_MAX). A negated
+        literal ("-1") is only representable as a signed int64_t when
+        its magnitude fits in the positive half of that range; a
+        magnitude larger than that can't be negated into anything
+        meaningful and is reported directly below rather than being
+        cast into an accidental positive value.
+    */
+
+    bool negate_unrepresentable =
+        negate && lit->int_val > (uint64_t)INT64_MAX + 1u;
+
+    int64_t v = 0;
+
+    if(!negate_unrepresentable)
+    {
+        v = negate
+            ? -(int64_t)lit->int_val
+            : (int64_t)lit->int_val;
+    }
 
     int64_t min = 0;
     int64_t max = 0;
     bool checked = true;
+    bool is_u64_class = false;
 
     if(len == 2 && strncmp(name, "i8", 2) == 0)
     {
@@ -187,16 +209,59 @@ static bool codegen_check_int_range(
             (len == 5 && strncmp(name, "usize", 5) == 0))
     {
         /*
-            int_val is a signed int64_t, so any value that made it
-            this far is already <= INT64_MAX; a negative literal is
-            the only thing worth flagging for an unsigned type.
+            Now that int_val is uint64_t, u64/usize can finally be
+            checked against its real range (0..UINT64_MAX) instead of
+            the old int64_t-imposed cap at INT64_MAX. Any non-negative
+            uint64_t value fits; only a negated literal is ever out
+            of range for these two types.
         */
 
-        min = 0; max = INT64_MAX;
+        is_u64_class = true;
     }
     else
     {
         checked = false;
+    }
+
+
+    if(checked && negate_unrepresentable)
+    {
+        char msg[112];
+
+        snprintf(
+            msg,
+            sizeof(msg),
+            "K1040: literal does not fit in declared type '%.*s'",
+            len,
+            name
+            );
+
+        codegen_error(msg, line, column);
+
+        return false;
+    }
+
+
+    if(checked && is_u64_class)
+    {
+        if(negate && lit->int_val != 0)
+        {
+            char msg[112];
+
+            snprintf(
+                msg,
+                sizeof(msg),
+                "K1040: literal does not fit in declared type '%.*s'",
+                len,
+                name
+                );
+
+            codegen_error(msg, line, column);
+
+            return false;
+        }
+
+        return true;
     }
 
 
@@ -207,7 +272,7 @@ static bool codegen_check_int_range(
         snprintf(
             msg,
             sizeof(msg),
-            "K4002: literal %lld does not fit in declared type '%.*s'",
+            "K1040: literal %lld does not fit in declared type '%.*s'",
             (long long)v,
             len,
             name
@@ -1691,8 +1756,8 @@ static void codegen_node(
     {
         fprintf(
             out,
-            "%lld",
-            (long long)node->int_val
+            "%llu",
+            (unsigned long long)node->int_val
             );
 
         break;
@@ -1956,8 +2021,8 @@ static void codegen_node(
         {
             codegen_error(
                 node->op == TOKEN_SLASH
-                    ? "K4001: division by constant zero"
-                    : "K4001: modulo by constant zero",
+                    ? "K1039: division by constant zero"
+                    : "K1039: modulo by constant zero",
                 node->children[1]->line,
                 node->children[1]->column
                 );
