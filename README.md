@@ -1,42 +1,98 @@
-# Kru Stage 5 — Test Suite & Stub Modules
+# Kru
 
-## File listing
+Kru is a small, statically-typed systems language that transpiles to C.
+It's an early-alpha personal project — the compiler (`kru0`) lexes, parses,
+does basic semantic analysis, and emits C, which is then compiled to a
+native binary by your C compiler of choice.
 
-### Test files
-| File | Tests |
-|------|-------|
-| `stage5_core.kru` | ref/mut ref, arena, raw pointers + null, heap alloc/free/realloc, file I/O with Result/?, CLI args |
-| `stage5_strings.kru` | str literals, String buffer, push_str, as_str, len, str_eq |
-| `stage5_arrays.kru` | [T; N] arrays, indexing, .len(), ref [T] slices |
-| `stage5_errors.kru` | Option<T>, Result<T, E>, ? operator, error propagation chains |
-| `stage5_math.kru` | Module with pub functions (imported by stage5_mod_main) |
-| `stage5_mod_main.kru` | `use` import, calling imported pub functions |
+```
+Kru source (.kru) → kru0 (transpiler) → C → native binary
+```
 
-### Stub module interfaces (wire these to your C builtins)
-| File | Maps to |
-|------|---------|
-| `kru_io.kru` | fopen/fread/fwrite/fclose + str_len/str_eq |
-| `kru_env.kru` | argc/argv |
-| `kru_mem.kru` | malloc/free/realloc |
-| `kru_string.kru` | owned string buffer (String type) |
-| `kru_result.kru` | Result<T, E> enum |
-| `kru_option.kru` | Option<T> enum |
+## Status
+
+Post-Stage 3. The core pipeline (lex → parse → sema → codegen → binary)
+works end to end, and the test suite passes. See
+[`SELF_HOSTING_REPORT.md`](./SELF_HOSTING_REPORT.md) for a detailed
+breakdown of what's implemented, what's missing, and the roadmap toward a
+self-hosted compiler (Kru written in Kru).
+
+**What works today:**
+- Full lexer — keywords, operators, literals, comments
+- Pratt-parser with full operator precedence and control flow
+- Functions, `const`, type aliases, structs (named + tuple), enums
+- Block expressions, scoped arena blocks, match expressions
+- Diagnostics for parse errors and immutable-assignment errors
+
+**What's not there yet:** arrays/slices, real string handling, file I/O,
+modules, pointers/references, dynamic allocation, real generics and
+traits. These are tracked as the path to self-hosting.
+
+## Quick start
+
+```bash
+git clone https://github.com/Apple21-art/Kru.git
+cd Kru
+chmod +x kru0
+
+./kru0 tests/hello.kru
+```
+
+That builds the compiler (cached after the first run), transpiles
+`hello.kru` to C, compiles it, and runs it.
+
+## Example
+
+```kru
+pub fn main() -> int {
+    ret 42
+}
+```
+
+A slightly bigger taste, from `tests/core.kru`:
+
+```kru
+pub fn math_test() -> int {
+    let a: int := 1 + 2 * 3 - 4 / 2
+    let b: int := ((10 + 20) * (30 - 10)) / 5
+    let c: int := a + b * b - a / 2
+
+    pr(a)
+    pr(b)
+    pr(c)
+
+    ret c
+}
+```
 
 ## Usage
 
-1. Drop all `.kru` files into one folder.
-2. Wire the stub modules to your C runtime builtins.
-3. Compile and run each test file independently:
-   - `stage5_core.kru` — refs, arena, pointers, heap, file I/O, args
-   - `stage5_strings.kru` — string operations
-   - `stage5_arrays.kru` — arrays and slices
-   - `stage5_errors.kru` — Option/Result/error propagation
-   - `stage5_mod_main.kru` — module imports (requires stage5_math.kru)
+```bash
+./kru0 file.kru              # compile and run
+./kru0 build file.kru out.c  # transpile + compile only, don't run
+./kru0 test                  # run the full test suite in tests/
+```
 
-## Expected output
+## Requirements
 
-- `stage5_core.kru`: 20, 42, 45, 123, 123, 0, file length, arg count, 0
-- `stage5_strings.kru`: 18, 18, 1
-- `stage5_arrays.kru`: 4, 10, 40, 4, 20
-- `stage5_errors.kru`: 5, 5, -2
-- `stage5_mod_main.kru`: 42, 100, 100
+- `bash`
+- `gcc` (or `clang`, if your copy of `kru0` supports `CC=clang`)
+
+## Project layout
+
+```
+src/        compiler source (lexer, parser, sema, codegen, ast, main)
+include/    corresponding headers
+tests/      .kru test/conformance files, run via `./kru0 test`
+kru0        build/run/test driver script
+```
+
+## Contributing
+
+Contributions are welcome — see [`CONTRIBUTING.md`](./CONTRIBUTING.md) for
+the workflow: branch from `main`, add a `.kru` test for any new language
+feature, make sure `./kru0 test` still passes, then open a PR.
+
+## License
+
+MIT — see [`LICENSE.md`](./LICENSE.md).
