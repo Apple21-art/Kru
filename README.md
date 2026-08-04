@@ -11,12 +11,6 @@ Kru source (.kru) → kru0 (transpiler) → C → native binary
 
 ## Status
 
-Post-Stage 3. The core pipeline (lex → parse → sema → codegen → binary)
-works end to end, and the test suite passes. See
-[`SELF_HOSTING_REPORT.md`](./SELF_HOSTING_REPORT.md) for a detailed
-breakdown of what's implemented, what's missing, and the roadmap toward a
-self-hosted compiler (Kru written in Kru).
-
 **What works today:**
 - Full lexer — keywords, operators, literals, comments
 - Pratt-parser with full operator precedence and control flow
