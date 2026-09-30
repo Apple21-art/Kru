@@ -2,8 +2,10 @@
 //
 //  Stage 3 Test Suite
 //
-//  Tests: block expressions, arena blocks, enum variant access,
-//         match expressions, generic function skip, trait/impl skip
+//  Tests: block expressions (incl. nested), arena blocks (incl.
+//         nested), enum variant access, match expressions
+//         (literal, catch-all, enum-variant, nested block value),
+//         generic function skip, trait/impl skip
 //
 // ============================================================
 
@@ -61,6 +63,48 @@ fn block_chained()
 }
 
 
+// --- Nested block expression: a block whose tail value is itself
+//     produced by a block expression ---
+
+fn block_nested()
+-> i32
+{
+    let value :=
+    {
+        let inner :=
+        {
+            let a := 3
+            a * a
+        }
+
+        inner + 1
+    }
+
+    ret value
+}
+
+
+// --- Block expression used directly inside an arithmetic expression,
+//     not just as the whole initializer ---
+
+fn block_in_expression()
+-> i32
+{
+    let total :=
+        {
+            let a := 4
+            a + 1
+        }
+        +
+        {
+            let b := 6
+            b * 2
+        }
+
+    ret total
+}
+
+
 // --- Arena block ---
 
 fn arena_test()
@@ -78,6 +122,29 @@ fn arena_test()
 }
 
 
+// --- Nested arena blocks ---
+
+fn arena_nested()
+-> i32
+{
+    var total := 0
+
+    arena outer
+    {
+        let a := 5
+        total = total + a
+
+        arena inner
+        {
+            let b := 10
+            total = total + b
+        }
+    }
+
+    ret total
+}
+
+
 // --- Enum variant access ---
 
 fn enum_access_test()
@@ -86,6 +153,17 @@ fn enum_access_test()
     let c := Color.Green
 
     ret c
+}
+
+
+fn enum_access_all_variants()
+-> i32
+{
+    let r := Color.Red
+    let g := Color.Green
+    let b := Color.Blue
+
+    ret (r * 100) + (g * 10) + b
 }
 
 
@@ -108,12 +186,65 @@ fn match_literal_test()
 }
 
 
+// --- Match with more literal arms, still falling through to a
+//     specific late arm rather than the first one ---
+
+fn match_literal_late_arm()
+-> i32
+{
+    let x := 7
+
+    match x
+    {
+        1 => { ret 1 }
+        2 => { ret 2 }
+        7 => { ret 77 }
+        n => { ret n }
+    }
+
+    ret 0
+}
+
+
+// --- Match whose catch-all binds the scrutinee and uses it in an
+//     expression, not just returned verbatim ---
+
+fn match_catchall_expr()
+-> i32
+{
+    let x := 15
+
+    match x
+    {
+        1 => { ret 100 }
+        n => { ret n * 2 }
+    }
+
+    ret 0
+}
+
+
 // --- Match with enum variant patterns ---
 
 fn match_enum_test()
 -> i32
 {
     let state := ResultCode.Ok
+
+    match state
+    {
+        ResultCode.Ok => { ret 1 }
+        ResultCode.Failed => { ret 0 }
+    }
+
+    ret -1
+}
+
+
+fn match_enum_failed()
+-> i32
+{
+    let state := ResultCode.Failed
 
     match state
     {
@@ -139,6 +270,34 @@ fn match_catchall_test()
     }
 
     ret 0
+}
+
+
+// --- Match used inside a helper, called with several different
+//     inputs from the caller (exercises match as an ordinary
+//     reusable function body, not just a one-shot smoke test) ---
+
+fn classify(n: i32)
+-> i32
+{
+    match n
+    {
+        0 => { ret 0 }
+        1 => { ret 1 }
+        2 => { ret 2 }
+        other => { ret -1 }
+    }
+
+    ret -1
+}
+
+fn classify_sweep()
+-> i32
+{
+    ret (classify(0) * 1000)
+        + (classify(1) * 100)
+        + (classify(2) * 10)
+        + (classify(9) + 1)
 }
 
 
@@ -176,13 +335,21 @@ impl Printable for Color
 pub fn main()
 -> i32
 {
-    pr(block_test())        // 30
-    pr(block_chained())    // 23
-    pr(arena_test())       // 142
-    pr(enum_access_test()) // 1 (Green = 1)
-    pr(match_literal_test()) // 30
-    pr(match_enum_test())  // 1
-    pr(match_catchall_test()) // 42
+    pr(block_test())            // 30
+    pr(block_chained())         // 23
+    pr(block_nested())          // 10
+    pr(block_in_expression())   // 17
+    pr(arena_test())            // 142
+    pr(arena_nested())          // 15
+    pr(enum_access_test())      // 1 (Green = 1)
+    pr(enum_access_all_variants()) // 12
+    pr(match_literal_test())    // 30
+    pr(match_literal_late_arm()) // 77
+    pr(match_catchall_expr())   // 30
+    pr(match_enum_test())       // 1
+    pr(match_enum_failed())     // 0
+    pr(match_catchall_test())   // 42
+    pr(classify_sweep())        // 120
 
     ret 0
 }

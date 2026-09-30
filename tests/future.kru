@@ -132,6 +132,115 @@ pub fn future_test() -> int {
 
 
 
+    /*
+        MODULE SYSTEM
+    */
+
+    // Attempted in tests/stage5_mod.kru, stage5_mod_main.kru,
+    // stage5_core.kru — parser currently stops at 'use' with
+    // K1011 "expected declaration". Needs: 'use <module>' import,
+    // '<module>::item' path resolution.
+    //
+    // TODO:
+    //
+    // use math_utils
+    //
+    // pub fn main() -> i32 {
+    //     pr(double_it(21))
+    //     pr(math_utils::add_one(99))
+    //     ret 0
+    // }
+
+
+
+    /*
+        RESULT / OPTION + ? OPERATOR
+    */
+
+    // Attempted in tests/stage5_errors.kru, stage5_core.kru — needs
+    // generic Result<T,E>/Option<T> types, kru_result::/kru_option::
+    // namespacing, and the '?' short-circuit operator on fallible calls.
+    //
+    // TODO:
+    //
+    // fn div_with_check(a: i32, b: i32) -> kru_result::Result<i32, str> {
+    //     if b == 0 {
+    //         ret kru_result::Err("division by zero")
+    //     }
+    //     ret kru_result::Ok(a / b)
+    // }
+    //
+    // fn chained() -> kru_result::Result<i32, str> {
+    //     let x: i32 = div_with_check(10, 2)?
+    //     ret kru_result::Ok(x)
+    // }
+
+
+
+    /*
+        TRAIT / IMPL METHOD DISPATCH
+    */
+
+    // Attempted in tests/generics_traits.kru, arena_demo.kru — 'trait'
+    // and 'impl Trait for Type' declarations already parse in stage3
+    // (skipped), but calling a method through '.' on a struct value
+    // (self.x, shape.area(), v1@.scale(2.0)) isn't wired up yet.
+    //
+    // TODO:
+    //
+    // trait Shape {
+    //     fn area(self) -> i32
+    // }
+    //
+    // impl Shape for Rectangle {
+    //     fn area(self) -> i32 {
+    //         ret self.width * self.height
+    //     }
+    // }
+    //
+    // let a := rect.area()
+
+
+
+    /*
+        GENERIC CALL SYNTAX + CLOSURES
+    */
+
+    // Attempted in tests/generics_traits.kru — generic function
+    // *declarations* like 'identity<T>(value: T) -> T' already parse,
+    // but explicit-instantiation calls like 'identity<i32>(100)' and
+    // closures with capture lists ('fn(x: i32) -> i32 [factor] {...}')
+    // are not yet supported.
+    //
+    // TODO:
+    //
+    // let number := identity<i32>(100)
+    //
+    // fn make_multiplier(factor: i32) -> fn(i32) -> i32 {
+    //     ret fn(x: i32) -> i32 [factor] {
+    //         ret x * factor
+    //     }
+    // }
+
+
+
+    /*
+        ARENA ALLOCATOR METHODS
+    */
+
+    // Attempted in tests/arena_demo.kru — 'arena name { ... }' blocks
+    // already work (see stage3.kru), but 'scratch.alloc(Type)' as an
+    // allocator method returning a typed handle is not implemented.
+    //
+    // TODO:
+    //
+    // arena scratch {
+    //     let v1 := scratch.alloc(Vertex)
+    //     v1@ = Vertex.new(1.0, 2.0, 3.0)
+    // }
+
+
+
     pr(0)
 
     ret 0

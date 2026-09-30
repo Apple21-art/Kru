@@ -172,6 +172,10 @@ static const Keyword KEYWORDS[] =
     {"match", TOKEN_KW_MATCH},
 
 
+    {"for", TOKEN_KW_FOR},
+    {"in", TOKEN_KW_IN},
+
+
     {"struct", TOKEN_KW_STRUCT},
 
     {"enum", TOKEN_KW_ENUM},
@@ -201,7 +205,9 @@ static const Keyword KEYWORDS[] =
 
     {"true", TOKEN_BOOL_LIT},
 
-{"false", TOKEN_BOOL_LIT}
+{"false", TOKEN_BOOL_LIT},
+
+    {"null", TOKEN_NULL_LIT}
 
 };
 

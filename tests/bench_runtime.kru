@@ -1,0 +1,14 @@
+fn fib(n: i32) -> i32 {
+    if n < 2 {
+        ret n
+    }
+    ret fib(n - 1) + fib(n - 2)
+}
+
+pub fn main() -> i32 {
+    let result := fib(30)
+    if result == 832040 {
+        ret 0
+    }
+    ret 1
+}

@@ -68,6 +68,13 @@ const char* token_type_name(
         return "match";
 
 
+    case TOKEN_KW_FOR:
+        return "for";
+
+    case TOKEN_KW_IN:
+        return "in";
+
+
     case TOKEN_KW_STRUCT:
         return "struct";
 

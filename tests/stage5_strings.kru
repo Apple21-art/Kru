@@ -1,21 +1,66 @@
 // stage5_strings.kru
 // Tests: str literals, String buffer, push_str, as_str, len, equality.
+//
+// STATUS (see CONFORMANCE.md, "Confirmed not yet working"): does not
+// compile against kru0 today. Fails at the first line, `use
+// kru_string`, with K1011 "expected declaration" -- same root cause
+// as the other stage5_*.kru module fixtures (no `use` parsing yet).
+// Layered on top of that: `kru_string::String` as a growable-buffer
+// type, `String::new()` associated-function call syntax, and
+// `.push_str(...)`/`.as_str()` as method calls on a struct-like value
+// all need `impl` blocks + method dispatch, which future.kru's "TRAIT
+// / IMPL METHOD DISPATCH" section separately documents as
+// unimplemented (calling through `.` on a value isn't wired up, even
+// though `trait`/`impl Trait for Type` declarations themselves already
+// parse -- see stage3.kru's Printable/Color impl).
+//
+// kru0's un-namespaced builtins today (str_len, str_eq, str_concat --
+// see tests/stage4.kru's string_* functions) already cover the
+// non-namespaced, non-buffer subset of what this file is reaching for.
+// This fixture is kept in its target, module-qualified, buffer-typed
+// shape rather than downgraded to that subset, since it exists
+// specifically to pin down the namespaced/String-buffer surface once
+// modules and method dispatch both land.
 
 use kru_string
 use kru_io
 
 fn string_test() -> i32 {
-    let s1: str = "Hello, Kru Stage 5!"
+    let s1: str := "Hello, Kru Stage 5!"
     pr(kru_io::str_len(ref s1))
 
-    var buf: kru_string::String = kru_string::String::new()
+    var buf: kru_string::String := kru_string::String::new()
     buf.push_str(ref "stage5")
     buf.push_str(ref " file write")
 
-    let s2: ref str = buf.as_str()
+    let s2: ref str := buf.as_str()
     pr(kru_io::str_len(s2))
 
     if kru_io::str_eq(ref s1, ref s1) {
+        pr(1)
+    } else {
+        pr(0)
+    }
+
+    // Distinct-value equality check, not just a value compared with
+    // itself: makes sure a correct implementation can't get away with
+    // a pointer-identity shortcut.
+    let s3: str := "Hello, Kru Stage 5!"
+    if kru_io::str_eq(ref s1, ref s3) {
+        pr(1)
+    } else {
+        pr(0)
+    }
+
+    let s4: str := "something else entirely"
+    if kru_io::str_eq(ref s1, ref s4) {
+        pr(1)
+    } else {
+        pr(0)   // expected: distinct contents compare unequal
+    }
+
+    // The buffer built above should equal an equivalent literal.
+    if kru_io::str_eq(s2, ref "stage5 file write") {
         pr(1)
     } else {
         pr(0)

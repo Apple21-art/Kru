@@ -1,0 +1,7 @@
+pub fn main() -> i32 {
+var value: i32
+loop { break
+value = 1 }
+pr(value)
+ret 0
+}

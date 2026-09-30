@@ -56,6 +56,11 @@ typedef enum
     TOKEN_KW_MATCH,
 
 
+    TOKEN_KW_FOR,
+
+    TOKEN_KW_IN,
+
+
     TOKEN_KW_STRUCT,
 
     TOKEN_KW_ENUM,
@@ -100,6 +105,7 @@ typedef enum
     TOKEN_CHAR_LIT,
 
     TOKEN_BOOL_LIT,
+    TOKEN_NULL_LIT,
 
 
     TOKEN_DOC_COMMENT,

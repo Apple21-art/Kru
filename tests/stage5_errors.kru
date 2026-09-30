@@ -1,5 +1,20 @@
 // stage5_errors.kru
 // Tests: Option<T>, Result<T, E>, ? operator, simple error paths.
+//
+// STATUS (see CONFORMANCE.md, "Confirmed not yet working"): does not
+// compile against kru0 today. Fails at the first line, `use
+// kru_result`, with K1011 "expected declaration" -- `use` has no
+// parser support yet (tracked in KRU_AGENT_DESIGN.md's task queue,
+// after `.len()` method syntax). Generic `Result<T, E>`/`Option<T>`
+// types, the `kru_result::`/`kru_option::` namespacing, and the `?`
+// short-circuit operator are all separately unimplemented on top of
+// that -- see future.kru's "RESULT / OPTION + ? OPERATOR" section,
+// which documents the same gap from the language-design side.
+//
+// Kept in the target shape (real generics + `?`) rather than rewritten
+// against today's subset, since a happy-path/error-path pair for
+// `Option`/`Result` is exactly what this fixture exists to pin down
+// once those features land.
 
 use kru_result
 use kru_option
@@ -19,35 +34,63 @@ fn div_with_check(a: i32, b: i32) -> kru_result::Result<i32, str> {
     ret kru_result::Ok(a / b)
 }
 
+// Happy path: every step succeeds, so `?` never short-circuits.
 fn option_chain() -> kru_option::Option<i32> {
-    let x: i32 = maybe_div(10, 2)?
-    let y: i32 = maybe_div(x, 1)?
+    let x: i32 := maybe_div(10, 2)?
+    let y: i32 := maybe_div(x, 1)?
     ret kru_option::Some(y)
 }
 
 fn result_chain() -> kru_result::Result<i32, str> {
-    let x: i32 = div_with_check(10, 2)?
-    let y: i32 = div_with_check(x, 1)?
+    let x: i32 := div_with_check(10, 2)?
+    let y: i32 := div_with_check(x, 1)?
+    ret kru_result::Ok(y)
+}
+
+// Error path: the first fallible call fails, so `?` should
+// short-circuit and propagate None/Err without evaluating the rest of
+// the function body.
+fn option_chain_fails() -> kru_option::Option<i32> {
+    let x: i32 := maybe_div(10, 0)?
+    let y: i32 := maybe_div(x, 1)?
+    ret kru_option::Some(y)
+}
+
+fn result_chain_fails() -> kru_result::Result<i32, str> {
+    let x: i32 := div_with_check(10, 0)?
+    let y: i32 := div_with_check(x, 1)?
     ret kru_result::Ok(y)
 }
 
 fn file_errors() -> kru_result::Result<i32, kru_io::IoError> {
-    let h: kru_io::FileHandle = kru_io::file_open("nonexistent.kru")?
-    let _c: str = kru_io::file_read(mut ref h)?
+    let h: kru_io::FileHandle := kru_io::file_open("nonexistent.kru")?
+    let _c: str := kru_io::file_read(mut ref h)?
     kru_io::file_close(mut ref h)?
     ret kru_result::Ok(0)
 }
 
 pub fn main() -> i32 {
     match option_chain() {
-        kru_option::Some(v) => pr(v),
+        kru_option::Some(v) => pr(v),   // 5
         kru_option::None => pr(-1),
     }
 
+    match option_chain_fails() {
+        kru_option::Some(v) => pr(v),
+        kru_option::None => pr(-1),     // expected: division by zero short-circuits
+    }
+
     match result_chain() {
-        kru_result::Ok(v) => pr(v),
+        kru_result::Ok(v) => pr(v),     // 5
         kru_result::Err(_) => {
             pr(-99)
+        }
+    }
+
+    match result_chain_fails() {
+        kru_result::Ok(v) => pr(v),
+        kru_result::Err(_) => {
+            pr(-99)                     // expected: division by zero short-circuits
         }
     }
 

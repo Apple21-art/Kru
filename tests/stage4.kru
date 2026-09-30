@@ -102,9 +102,10 @@ fn array_mutate(
 )
 -> i32
 {
-    values[0] = 100
+    var local_values: [i32; 3] := [values[0], values[1], values[2]]
+    local_values[0] = 100
 
-    ret values[0]
+    ret local_values[0]
 }
 
 
@@ -116,6 +117,58 @@ fn array_nested()
     let grid: [[i32; 2]; 2] := [[1, 2], [3, 4]]
 
     ret grid[0][1] + grid[1][0]
+}
+
+
+// --- Array literal whose elements are computed expressions, not
+//     bare integer literals ---
+
+fn array_expr_elems()
+-> i32
+{
+    let a := 2
+    let b := 3
+
+    let nums := [a + b, a * b, a - b, b - a]
+
+    ret nums[0] + nums[1] + nums[2] + nums[3]
+}
+
+
+// --- Mutating array elements in place through `for ... in ref` ---
+
+fn array_mut_via_ref()
+-> i32
+{
+    var nums: [i32; 3] := [1, 2, 3]
+
+    for n in ref nums
+    {
+        n@ = n@ * 10
+    }
+
+    ret nums[0] + nums[1] + nums[2]
+}
+
+
+// --- Array of bool ---
+
+fn array_of_bool()
+-> i32
+{
+    let flags: [bool; 3] := [true, false, true]
+
+    var count := 0
+
+    for f in flags
+    {
+        if f
+        {
+            count = count + 1
+        }
+    }
+
+    ret count
 }
 
 
@@ -426,6 +479,7 @@ fn shape_payload()
     {
         Square(n) => { ret n * 2 }
         Shape.Empty => { ret 0 }
+        Shape.Label => { ret 0 }
     }
 
     ret 0
@@ -441,6 +495,7 @@ fn shape_payload_str()
     {
         Label(text) => { ret str_len(text) }
         Shape.Empty => { ret 0 }
+        Shape.Square => { ret 0 }
     }
 
     ret 0
@@ -464,6 +519,9 @@ pub fn main()
     pr(array_param_test())   // 10
     pr(array_mutate([1, 2, 3])) // 100
     pr(array_nested())       // 5
+    pr(array_expr_elems())   // 11
+    pr(array_mut_via_ref())  // 60
+    pr(array_of_bool())      // 2
 
     // For loops
     pr(for_range())          // 10

@@ -59,8 +59,34 @@ pub fn primitive_test() -> i32 {
     let readable_number: i64 := 1_000_000
 
 
+    pr(signed8)
+    pr(signed16)
+    pr(signed32)
     pr(signed64)
+    pr(signed128)
+
+    pr(unsigned8)
+    pr(unsigned16)
+    pr(unsigned32)
     pr(unsigned64)
+    pr(unsigned128)
+
+    pr(machine_a)
+    pr(machine_b)
+
+    pr(float_a)
+    pr(float_b)
+
+    pr(boolean_true)
+    pr(boolean_false)
+
+    pr(character)
+
+    pr(hex_value)
+    pr(binary_value)
+    pr(octal_value)
+
+    pr(readable_number)
 
 
     ret 0
@@ -156,6 +182,7 @@ pub fn mutation_test()
     mutable = 30
 
 
+    pr(immutable)
     pr(mutable)
 
 
@@ -768,11 +795,18 @@ pub fn secure_test()
 -> i32
 {
 
-    let secret :=
-        Password
-        {
-            data := "hidden"
-        }
+    /*
+        Construct-only smoke test for the secure-struct literal path
+        (SECURITY.md: secure wiping isn't implemented by this bootstrap
+        yet, so there's nothing meaningful to read back here). No
+        binding is used so there's no "declared but never read" local
+        to warn about, and no secret payload is ever printed.
+    */
+
+    Password
+    {
+        data := "hidden"
+    }
 
 
 

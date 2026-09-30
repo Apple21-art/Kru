@@ -1,0 +1,7 @@
+pub fn main() -> i32 {
+    if "same" != "same" { ret 1 }
+    if "alpha" == "beta" { ret 2 }
+    if "line\n" != "line\x0A" { ret 3 }
+    pr("string equality works")
+    ret 0
+}

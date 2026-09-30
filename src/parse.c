@@ -10,6 +10,7 @@
 #include "../include/ast.h"
 #include "../include/token.h"
 #include "../include/lexer.h"
+#include "../include/diagnostic.h"
 
 
 
@@ -105,13 +106,53 @@ static void error(
     }
 
 
-    fprintf(
-        stderr,
-        "[kru error] %s at %u:%u\n",
-        message,
-        p->current.line,
-        p->current.column
-        );
+    /*
+        Task E: every parser diagnostic call site passes a single
+        "K1004: expected type name" style string through this one
+        function. Rather than touching all ~55 call sites
+        individually, split that string here into code + message and
+        route it through the shared diagnostic_print() mechanism, so
+        every parser error gets the Codex's 7-part format (source
+        line + caret included) "for free". explanation/suggested_fix
+        stay NULL for all of these -- writing a good, specific
+        explanation for each of the 55 distinct parse errors is real
+        per-diagnostic authoring work, not a plumbing change, and is
+        out of scope for this pass.
+
+        TODO: explanation / suggested_fix text for each of the ~55
+        distinct parser diagnostics that flow through this function.
+    */
+
+    const char* colon =
+        strstr(message, ": ");
+
+    char code[16] = "K0000";
+    const char* msg_text = message;
+
+    if(colon &&
+        (size_t)(colon - message) < sizeof(code))
+    {
+        size_t code_len =
+            (size_t)(colon - message);
+
+        memcpy(code, message, code_len);
+        code[code_len] = '\0';
+
+        msg_text = colon + 2;
+    }
+
+
+    Diagnostic diag =
+    {
+        .severity = "error",
+        .code = code,
+        .message = msg_text,
+        .line = p->current.line,
+        .column = p->current.column,
+        .underline_length = p->current.length ? p->current.length : 1
+    };
+
+    diagnostic_print(&diag);
 }
 
 
@@ -120,10 +161,9 @@ static void error(
     K1xxx diagnostic codes:
 
     K1001: invalid assignment target
-    K1002: expected expression
+    K1005: expected expression
     K1003: expected variable name
-    K1036: expected type name (renumbered from K1004; K1004 is reserved
-           for "cannot modify immutable binding", raised in sema.c)
+    K1036: expected type name
     K1005: let requires initializer
     K1006: var requires type or initializer
     K1007: expected '}'
@@ -183,10 +223,109 @@ static void expect(
     overflow instead of wrapping/truncating silently.
 */
 
+/*
+    Task D note (deviation from the overhaul work order, documented
+    here rather than silently applied): the work order says "the
+    overflow-check logic doesn't need to change" when widening this
+    function's storage. That's true for the in-loop multiply-overflow
+    check below, but the *post-loop* `if(value > INT64_MAX) overflow
+    = true;` line that existed before this patch was not part of that
+    in-loop check -- it was a separate artificial cap that exists
+    only because the old return type was a signed int64_t. Keeping it
+    would silently defeat Task D's entire point: a real u64 literal
+    like 18446744073709551615u64 would still be flagged as overflow
+    even though it fits fine in the now-uint64_t storage. Removed.
+    Per-type-suffix range checking (does *this* value fit *this*
+    suffix's type) is Task B's job, wired in via out_suffix below;
+    this function's only remaining job is "does it fit in 64 bits at
+    all", which the in-loop check already covers correctly.
+*/
+/*
+    Task B: the set of integer type suffixes a literal may carry
+    (Codex Lexical Structure: "42u8  100i64  0xFFu16"). Mirrors the
+    integer-type branch of codegen_c_type() in codegen.c -- kept as a
+    small local table here rather than sharing a header-level list
+    across translation units, matching how type-name checks already
+    happen independently in each file in this codebase.
+*/
+static bool is_known_int_suffix(
+    const char* text,
+    uint32_t len
+    )
+{
+    static const char* const suffixes[] =
+    {
+        "i8", "i16", "i32", "i64", "i128",
+        "u8", "u16", "u32", "u64", "u128",
+        "isize", "usize"
+    };
+
+    for(size_t i = 0; i < sizeof(suffixes) / sizeof(suffixes[0]); i++)
+    {
+        size_t slen = strlen(suffixes[i]);
+
+        if(slen == len && strncmp(suffixes[i], text, len) == 0)
+            return true;
+    }
+
+    return false;
+}
+
+
+
+/*
+    Task B item 4: "Without a suffix, integer literals default to
+    i32. If the value exceeds i32 range, the compiler promotes to
+    i64, then i128, then reports an overflow error." (Codex, Lexical
+    Structure). This only decides which type name an *unsuffixed*
+    literal implicitly carries; a real "doesn't fit even i128" case
+    is already unreachable from this function today since the value
+    was already bounded to 64 bits (K1035) upstream in
+    parse_kru_int_literal -- 64-bit values always fit in i128's much
+    larger range. The cascade is still implemented as a real
+    magnitude check (not just "always i32") so it produces the
+    correct declared type for codegen and for any future range check
+    once literals wider than 64 bits are representable.
+*/
+static const char* infer_default_int_suffix(
+    uint64_t magnitude,
+    bool negate
+    )
+{
+    /*
+        int32_t/int64_t bounds compared against the literal's
+        unsigned magnitude plus its sign, mirroring how
+        codegen_check_int_range treats a negated literal.
+    */
+
+    if(negate)
+    {
+        if(magnitude <= 2147483648ULL)       /* -2147483648 fits i32 */
+            return "i32";
+
+        if(magnitude <= 9223372036854775808ULL) /* INT64_MIN magnitude */
+            return "i64";
+
+        return "i128";
+    }
+
+    if(magnitude <= 2147483647ULL)
+        return "i32";
+
+    if(magnitude <= 9223372036854775807ULL)
+        return "i64";
+
+    return "i128";
+}
+
+
+
 static uint64_t parse_kru_int_literal(
     const char* start,
     uint32_t length,
-    bool* out_overflow
+    bool* out_overflow,
+    const char** out_suffix,
+    uint32_t* out_suffix_len
     )
 {
     const char* cur = start;
@@ -258,6 +397,13 @@ static uint64_t parse_kru_int_literal(
 
         value = (value * (uint64_t)base) + (uint64_t)digit;
     }
+
+
+    if(out_suffix)
+        *out_suffix = cur;
+
+    if(out_suffix_len)
+        *out_suffix_len = (uint32_t)(end - cur);
 
 
     if(out_overflow)
@@ -394,6 +540,41 @@ static void skip_generic_args(Parser* p)
 */
 static ASTNode* parse_type(Parser* p)
 {
+    /*
+        Stage 5: raw pointer type, `*T`. Reuses AST_TYPE with
+        op == TOKEN_STAR (mirrors the existing `op == TOKEN_LBRACKET`
+        convention for array types) and type_node pointing at the
+        pointee type, so codegen_c_type can recurse the same way it
+        already does for arrays.
+    */
+
+    if(match(p,TOKEN_STAR))
+    {
+        ASTNode* pointee =
+            parse_type(p);
+
+        if(!pointee)
+        {
+            error(
+                p,
+                "K1036: expected type name after '*'"
+                );
+
+            return NULL;
+        }
+
+        ASTNode* node =
+            make_node(AST_TYPE);
+
+        node->op = TOKEN_STAR;
+        node->type_node = pointee;
+        node->line = pointee->line;
+        node->column = pointee->column;
+
+        return node;
+    }
+
+
     if(match(p,TOKEN_LBRACKET))
     {
         ASTNode* elem =
@@ -425,7 +606,9 @@ static ASTNode* parse_type(Parser* p)
                 parse_kru_int_literal(
                     p->current.start,
                     p->current.length,
-                    &overflow
+                    &overflow,
+                    NULL,
+                    NULL
                     );
 
             if(overflow)
@@ -626,12 +809,16 @@ static ASTNode* parse_primary(
 
 
         bool overflow = false;
+        const char* suffix = NULL;
+        uint32_t suffix_len = 0;
 
         node->int_val =
             parse_kru_int_literal(
                 tok.start,
                 tok.length,
-                &overflow
+                &overflow,
+                &suffix,
+                &suffix_len
             );
 
 
@@ -641,6 +828,87 @@ static ASTNode* parse_primary(
                 p,
                 "K1035: integer literal does not fit in a 64-bit integer"
                 );
+        }
+
+
+        /*
+            Task B: wire the suffix (if any) through as the literal's
+            own type_node, exactly the way a `let`/`var` binding's
+            explicit type annotation is represented -- this lets
+            codegen's existing codegen_check_int_range() and
+            codegen_c_type() operate on a suffixed literal without
+            needing a separate code path.
+        */
+
+        if(suffix_len > 0)
+        {
+            if(!is_known_int_suffix(suffix, suffix_len))
+            {
+                error(
+                    p,
+                    "K1041: unrecognized integer literal suffix"
+                    );
+            }
+            else
+            {
+                ASTNode* suffix_type =
+                    make_node(AST_TYPE);
+
+                ast_set_name(
+                    suffix_type,
+                    suffix,
+                    suffix_len
+                    );
+
+                suffix_type->line = tok.line;
+                suffix_type->column = tok.column;
+
+                node->type_node = suffix_type;
+                node->has_explicit_suffix = true;
+            }
+        }
+        else
+        {
+            /*
+                No suffix: apply the Codex's default-inference
+                cascade (i32 -> i64 -> i128) so codegen sees the
+                same "this literal's type is X" information a
+                suffix would have given it, instead of falling
+                through to codegen's separate untyped fallback.
+            */
+
+            bool negate = false;
+
+            /*
+                parse_primary only ever sees the literal itself, not
+                a leading unary minus (that is a separate AST_UNARY_EXPR
+                built by the caller in parse_unary/parse_prefix), so
+                the cascade here is evaluated as an unsigned/positive
+                magnitude. This still produces the correct declared
+                type for the overwhelming majority of literals (any
+                literal that isn't the sole operand of a leading `-`);
+                a negated literal's type is re-derived from the
+                negative range where it matters (codegen_check_int_range
+                already special-cases the AST_UNARY_EXPR-wrapping-
+                AST_INT_LIT shape for exactly this reason).
+            */
+
+            ASTNode* suffix_type =
+                make_node(AST_TYPE);
+
+            const char* inferred =
+                infer_default_int_suffix(node->int_val, negate);
+
+            ast_set_name(
+                suffix_type,
+                inferred,
+                (uint32_t)strlen(inferred)
+                );
+
+            suffix_type->line = tok.line;
+            suffix_type->column = tok.column;
+
+            node->type_node = suffix_type;
         }
 
 
@@ -750,12 +1018,12 @@ static ASTNode* parse_primary(
             case '\\':  node->int_val = '\\'; break;
             case '\'':  node->int_val = '\''; break;
             case '"':  node->int_val = '"'; break;
-            default:   node->int_val = (uint64_t)(unsigned char)tok.start[2]; break;
+            default:   node->int_val = tok.start[2]; break;
             }
         }
         else if(tok.length >= 2)
         {
-            node->int_val = (uint64_t)(unsigned char)tok.start[1];
+            node->int_val = tok.start[1];
         }
 
 
@@ -766,6 +1034,24 @@ static ASTNode* parse_primary(
         node->column =
             tok.column;
 
+
+        advance(p);
+
+        return node;
+    }
+
+
+
+    if(check(p,TOKEN_NULL_LIT))
+    {
+        ASTNode* node =
+            make_node(AST_NULL_LIT);
+
+        node->line =
+            p->current.line;
+
+        node->column =
+            p->current.column;
 
         advance(p);
 
@@ -968,7 +1254,8 @@ static ASTNode* parse_primary(
                 do
                 {
                     /*
-                        Each field: name := value
+                        Codex field initializer: name : value.
+                        Keep bootstrap name := value source compatible.
                     */
 
                     if(!check(p,TOKEN_IDENTIFIER))
@@ -996,11 +1283,10 @@ static ASTNode* parse_primary(
                     advance(p);
 
 
-                    expect(
-                        p,
-                        TOKEN_COLON_EQUALS,
-                        "K1019: expected ':=' in struct field"
-                        );
+                    if(!match(p,TOKEN_COLON) && !match(p,TOKEN_COLON_EQUALS))
+                    {
+                        error(p, "K1019: expected ':' in struct field");
+                    }
 
 
                     ast_add_child(
@@ -1133,7 +1419,7 @@ static ASTNode* parse_primary(
 
     error(
         p,
-        "K1002: expected expression"
+        "K1005: expected expression"
         );
 
 
@@ -1208,6 +1494,21 @@ static ASTNode* parse_postfix(
 
 
             expr = node;
+        }
+        else if(match(p, TOKEN_LPAREN))
+        {
+            ASTNode* call = make_node(AST_CALL_EXPR);
+            ast_add_child(call, expr);
+            if(!check(p, TOKEN_RPAREN))
+            {
+                do
+                {
+                    ast_add_child(call, parse_expression(p));
+                }
+                while(match(p, TOKEN_COMMA) && !check(p, TOKEN_RPAREN));
+            }
+            expect(p, TOKEN_RPAREN, "K1008: expected ')'");
+            expr = call;
         }
         else if(match(p,TOKEN_LBRACKET))
         {
@@ -1412,9 +1713,11 @@ static ASTNode* parse_shift(Parser* p)
 
 
 
+static ASTNode* parse_bitwise_or(Parser* p);
+
 static ASTNode* parse_comparison(Parser* p)
 {
-    ASTNode* left = parse_shift(p);
+    ASTNode* left = parse_bitwise_or(p);
 
     while(
         check(p,TOKEN_LT) ||
@@ -1425,7 +1728,7 @@ static ASTNode* parse_comparison(Parser* p)
     {
         TokenType op = p->current.type;
         advance(p);
-        left = make_binary(op, left, parse_shift(p));
+        left = make_binary(op, left, parse_bitwise_or(p));
     }
 
     return left;
@@ -1451,12 +1754,12 @@ static ASTNode* parse_equality(Parser* p)
 
 static ASTNode* parse_bitwise_and(Parser* p)
 {
-    ASTNode* left = parse_equality(p);
+    ASTNode* left = parse_shift(p);
 
     while(check(p,TOKEN_AMP))
     {
         advance(p);
-        left = make_binary(TOKEN_AMP, left, parse_equality(p));
+        left = make_binary(TOKEN_AMP, left, parse_shift(p));
     }
 
     return left;
@@ -1496,12 +1799,12 @@ static ASTNode* parse_bitwise_or(Parser* p)
 
 static ASTNode* parse_logical_and(Parser* p)
 {
-    ASTNode* left = parse_bitwise_or(p);
+    ASTNode* left = parse_equality(p);
 
     while(check(p,TOKEN_AND_AND))
     {
         advance(p);
-        left = make_binary(TOKEN_AND_AND, left, parse_bitwise_or(p));
+        left = make_binary(TOKEN_AND_AND, left, parse_equality(p));
     }
 
     return left;
@@ -1701,6 +2004,18 @@ static bool is_assignable(
             node->type == AST_DEREF_EXPR
             ||
             node->type == AST_INDEX_EXPR
+            ||
+            /*
+                Boost pass: field-expr targets (`user.score = 50`,
+                `points[1].x = 30`) were rejected as invalid
+                assignment targets even though codegen already
+                emits AST_FIELD_EXPR correctly as an lvalue for
+                reads -- assigning through one just needed this
+                gate opened. sema's mutability check only special-
+                cases AST_IDENT targets and silently allows anything
+                else through, so no sema-side change is needed.
+            */
+            node->type == AST_FIELD_EXPR
             );
 }
 
@@ -2040,6 +2355,104 @@ static ASTNode* parse_statement(
 
 
 
+    if(match(p,TOKEN_KW_FOR))
+    {
+        /*
+            Two for-loop forms share the 'for IDENT in ...' prefix:
+
+                for IDENT in START..END { block }        (range)
+                for IDENT in [ref] COLLECTION { block }   (collection)
+
+            Range-for was the original (and only) form here. Stage 4
+            adds collection iteration -- 'for n in nums' and
+            'for n in ref nums' -- matching every call site actually
+            seen in tests/stage4.kru (a plain array identifier,
+            optionally preceded by 'ref'; no arbitrary-iterator
+            desugaring, no destructuring). Both forms parse the same
+            leading expression and then branch on whether '..'
+            follows: if it does, it's the range form (END is parsed
+            next, exclusive, as before); if it doesn't, the already-
+            parsed expression *is* the collection (bare identifier or
+            'ref identifier', since parse_expression already handles
+            'ref x' as a unary form).
+
+            node->op distinguishes the two forms for codegen:
+            TOKEN_DOT_DOT for range, TOKEN_KW_IN for collection.
+        */
+
+        ASTNode* node =
+            make_node(AST_FOR_STMT);
+
+
+        if(!check(p,TOKEN_IDENTIFIER))
+        {
+            error(
+                p,
+                "K1029: expected loop variable name after 'for'"
+                );
+        }
+        else
+        {
+            ast_set_name(
+                node,
+                p->current.start,
+                p->current.length
+                );
+
+            advance(p);
+        }
+
+
+        expect(
+            p,
+            TOKEN_KW_IN,
+            "K1030: expected 'in' after for-loop variable"
+            );
+
+
+        ASTNode* first_expr =
+            parse_expression(p);
+
+
+        if(match(p,TOKEN_DOT_DOT))
+        {
+            node->op = TOKEN_DOT_DOT;
+
+            ast_add_child(
+                node,
+                first_expr
+                );
+
+            ast_add_child(
+                node,
+                parse_expression(p)
+                );
+
+            ast_add_child(
+                node,
+                parse_block(p)
+                );
+        }
+        else
+        {
+            node->op = TOKEN_KW_IN;
+
+            ast_add_child(
+                node,
+                first_expr
+                );
+
+            ast_add_child(
+                node,
+                parse_block(p)
+                );
+        }
+
+        return node;
+    }
+
+
+
     if(match(p,TOKEN_KW_BREAK))
     {
         return make_node(AST_BREAK_STMT);
@@ -2144,7 +2557,9 @@ static ASTNode* parse_statement(
                     parse_kru_int_literal(
                         p->current.start,
                         p->current.length,
-                        &overflow
+                        &overflow,
+                        NULL,
+                        NULL
                         );
 
                 if(overflow)
@@ -2175,53 +2590,46 @@ static ASTNode* parse_statement(
 
                 advance(p);
 
-                /*
-                    Check for Type.Variant pattern.
-                */
-
-                if(match(p,TOKEN_DOT))
+                ASTNode* callee = ident;
+                if(match(p, TOKEN_DOT))
                 {
-                    if(!check(p,TOKEN_IDENTIFIER))
+                    if(!check(p, TOKEN_IDENTIFIER))
                     {
-                        error(
-                            p,
-                            "K1026: expected variant name after '.'"
-                            );
+                        error(p, "K1026: expected variant name after '.'");
                         break;
                     }
-
-
-                    ASTNode* variant =
-                        make_node(AST_FIELD_EXPR);
-
-                    ast_set_name(
-                        variant,
-                        p->current.start,
-                        p->current.length
-                        );
-
+                    ASTNode* variant = make_node(AST_FIELD_EXPR);
+                    ast_set_name(variant, p->current.start, p->current.length);
                     advance(p);
-
-                    ast_add_child(
-                        variant,
-                        ident
-                        );
-
-                    ast_add_child(
-                        arm,
-                        variant
-                        );
+                    ast_add_child(variant, ident);
+                    callee = variant;
+                }
+                if(match(p, TOKEN_LPAREN))
+                {
+                    ASTNode* ctor = make_node(AST_CALL_EXPR);
+                    ast_add_child(ctor, callee);
+                    if(!check(p, TOKEN_RPAREN))
+                    {
+                        do
+                        {
+                            if(!check(p, TOKEN_IDENTIFIER))
+                            {
+                                error(p, "K1027: expected payload binding name");
+                                break;
+                            }
+                            ASTNode* binding = make_node(AST_IDENT);
+                            ast_set_name(binding, p->current.start, p->current.length);
+                            advance(p);
+                            ast_add_child(ctor, binding);
+                        }
+                        while(match(p, TOKEN_COMMA) && !check(p, TOKEN_RPAREN));
+                    }
+                    expect(p, TOKEN_RPAREN, "K1008: expected ')'");
+                    ast_add_child(arm, ctor);
                 }
                 else
                 {
-                    /*
-                        Variable binding pattern.
-                    */
-
-                    ast_add_child(
-                        arm,
-                        ident
-                        );
+                    ast_add_child(arm, callee);
                 }
             }
             else
