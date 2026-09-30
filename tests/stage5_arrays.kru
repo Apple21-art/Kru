@@ -1,21 +1,80 @@
 // stage5_arrays.kru
-// Tests: [T; N], indexing, .len(), slices.
+// Tests: [T; N], indexing, .len() as a METHOD call, and slices (ref [T]).
+//
+// STATUS (see CONFORMANCE.md, "Confirmed not yet working"): does not
+// compile against kru0 today. `arr.len()` — the parenthesized
+// method-call form — is not implemented; only the Stage-4 field-style
+// `arr.len` (no parens) works (see tests/stage4.kru's array_len()).
+// `ref [i32]` as a slice TYPE is not implemented either; `ref` only
+// produces `*T` today (see tests/stage1.kru's reference_test()). Both
+// gaps are tracked as the next two items in KRU_AGENT_DESIGN.md's task
+// queue (`.len()` method syntax -> `use` modules -> slices). Confirmed
+// by direct compilation: kru0 stops at the first `arr.len()` call with
+// K1008 "expected ')'" (it parses `arr.len` as the field-access
+// expression it does understand, then chokes on the trailing `()`),
+// and at `ref [i32]` with K1036 "expected type name".
+//
+// This file is otherwise written the way callers SHOULD be able to
+// write it once slices land, per Codex Ch. 26 (raw pointers) and the
+// Rev. 3 note that `ref arr` with no range is exactly `ref arr[..]` —
+// i.e. every array reference is a slice, there's no separate "reference
+// to a fixed array" type. Keep it in that target shape rather than
+// working around the gap, so it stays a faithful regression fixture
+// for whoever picks up slice support.
 
 fn array_test() -> i32 {
-    let arr: [i32; 4] = [10, 20, 30, 40]
+    let arr: [i32; 4] := [10, 20, 30, 40]
     pr(arr.len()) // 4
 
     pr(arr[0]) // 10
     pr(arr[3]) // 40
 
-    let rs: ref [i32] = ref arr
+    // Whole-array decay to a slice (Codex Rev. 3, item 66): `ref arr`
+    // with no explicit range is defined as `ref arr[..]`.
+    let rs: ref [i32] := ref arr
     pr(rs.len()) // 4
     pr(rs[1])    // 20
 
     ret 0
 }
 
+// A partial-range slice, distinct from the whole-array-decay case
+// above: this exercises `arr[lo..hi]` producing a narrower `ref [T]`
+// whose `.len()` reflects the slice's own length, not the backing
+// array's.
+fn slice_range_test() -> i32 {
+    let arr: [i32; 6] := [1, 2, 3, 4, 5, 6]
+
+    let middle: ref [i32] := ref arr[1..4]
+    pr(middle.len()) // 3
+    pr(middle[0])    // 2
+    pr(middle[2])    // 4
+
+    ret 0
+}
+
+// Slices passed as function parameters -- the main reason `.len()`
+// needs to work as a method rather than only as a field: a slice
+// carries its own runtime length alongside the pointer, unlike a
+// fixed-size array where `.len` is a compile-time constant.
+fn slice_sum(values: ref [i32]) -> i32 {
+    var total := 0
+    var i := 0
+    while i < values.len() {
+        total = total + values[i]
+        i = i + 1
+    }
+    ret total
+}
+
+fn slice_param_test() -> i32 {
+    let arr: [i32; 5] := [2, 4, 6, 8, 10]
+    ret slice_sum(ref arr)
+}
+
 pub fn main() -> i32 {
     array_test()
+    slice_range_test()
+    slice_param_test()
     ret 0
 }

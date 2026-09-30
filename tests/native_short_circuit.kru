@@ -1,0 +1,6 @@
+pub fn main() -> i32 {
+    var x := 0
+    if false && (10 / x > 0) { ret 91 }
+    if true || (10 / x > 0) { x = 17 }
+    ret x
+}

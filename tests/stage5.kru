@@ -7,16 +7,29 @@
 // ---------------------------------------------------------------------------
 
 fn file_io_test() -> i32 {
-    // Open a file for reading, read its contents, print the length.
-    let handle := file_open("test.txt")
+    // Self-contained fixture: write it ourselves first instead of
+    // depending on a pre-existing "test.txt" living outside this repo
+    // snapshot (relying on an external fixture made this path silently
+    // untested whenever the file wasn't present relative to the cwd
+    // the compiler happened to run from).
+    let fixture := file_open_write("stage5_fixture.txt")
+    file_write(fixture, "Hello, Kru Stage 5!\nFile I/O works.\n")
+    file_close(fixture)
+
+    // Open it back up for reading, read its contents, print the length.
+    let handle := file_open("stage5_fixture.txt")
     let content := file_read(handle)
     file_close(handle)
 
-    // test.txt contains "Hello, Kru Stage 5!\nFile I/O works.\n"
-    // which is 36 bytes.
+    // "Hello, Kru Stage 5!\nFile I/O works.\n" is 36 bytes.
     pr(str_len(content))
 
-    // Write a new file and verify we can read it back.
+    // Round-trip the exact bytes, not just the length.
+    if str_eq(content, "Hello, Kru Stage 5!\nFile I/O works.\n") {
+        pr(1)
+    }
+
+    // Write a second file and verify we can read it back.
     let w := file_open_write("output_stage5.txt")
     file_write(w, "stage5 file write")
     file_close(w)
@@ -27,6 +40,21 @@ fn file_io_test() -> i32 {
 
     // "stage5 file write" is 18 bytes.
     pr(str_len(c2))
+
+    // Overwrite an existing file and confirm the new contents replace
+    // the old ones rather than appending.
+    let w2 := file_open_write("output_stage5.txt")
+    file_write(w2, "shorter")
+    file_close(w2)
+
+    let h3 := file_open("output_stage5.txt")
+    let c3 := file_read(h3)
+    file_close(h3)
+
+    pr(str_len(c3))       // 7
+    if str_eq(c3, "shorter") {
+        pr(1)
+    }
 
     ret 0
 }
@@ -102,6 +130,37 @@ fn alloc_test() -> i32 {
 
 
 // ---------------------------------------------------------------------------
+// Pointer arithmetic: treating a heap allocation as a small array by
+// walking a *i32 with `+` and dereferencing each computed address.
+// ---------------------------------------------------------------------------
+
+unsafe fn ptr_arith_test() -> i32 {
+    let base: *i32 := mem_alloc(16)
+
+    if base == null {
+        ret -1
+    }
+
+    let p0: *i32 := base
+    let p1: *i32 := base + 1
+    let p2: *i32 := base + 2
+    let p3: *i32 := base + 3
+
+    p0@ = 10
+    p1@ = 20
+    p2@ = 30
+    p3@ = 40
+
+    let total := p0@ + p1@ + p2@ + p3@
+    pr(total)
+
+    mem_free(base)
+
+    ret 0
+}
+
+
+// ---------------------------------------------------------------------------
 // Pointer types and null literal
 // ---------------------------------------------------------------------------
 
@@ -137,6 +196,12 @@ unsafe fn pointer_test() -> i32 {
         pr(0)
     }
 
+    if np != null {
+        // Should never fire; guards against a broken null comparison
+        // silently treating every pointer as non-null.
+        pr(-999)
+    }
+
     ret 0
 }
 
@@ -149,6 +214,7 @@ pub fn main() -> i32 {
     file_io_test()
     cli_args_test()
     alloc_test()
+    ptr_arith_test()
     pointer_test()
 
     ret 0

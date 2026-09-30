@@ -1,0 +1,22 @@
+pub fn main() -> i32 {
+    var i: i32 := 0
+    while i < 2000000 {
+        i += 1
+        let x := 7 + {
+            if i > 0 { continue }
+            1
+        }
+    }
+    pr(i)
+    var sum := 0
+    for j in 0..2000000 {
+        let x := 9 + { if j >= 0 { continue } 1 }
+        sum += x
+    }
+    pr(sum)
+    loop {
+        let x := 11 + { break 1 }
+    }
+    pr(12)
+    ret 0
+}

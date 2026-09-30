@@ -1,0 +1,20 @@
+enum Color { Red, Green, Blue }
+type Counter := i32
+const BASE: Counter := 4
+fn choose(color: Color) -> i32 {
+    match color {
+        Color.Red => { ret BASE }
+        Color.Green => { ret 7 }
+        Color.Blue => { ret 9 }
+    }
+    ret -1
+}
+pub fn main() -> i32 {
+    pr(choose(Color.Green))
+    let n := 17
+    match n {
+        0 => { pr(0) }
+        value => { pr(value + 1) }
+    }
+    ret 0
+}

@@ -1,16 +1,43 @@
-// stage5_mod.kru — tests the module import system.
-// 'use math_utils' imports all declarations from math_utils.kru.
+// stage5_mod.kru — tests the module import system's UNQUALIFIED
+// import form: `use stage5_math` should bring stage5_math.kru's pub
+// declarations directly into scope, so `double_it` can be called
+// without a `stage5_math::` prefix. (Contrast with stage5_mod_main.kru,
+// which tests the namespaced `stage5_math::double_it` form instead --
+// the two files intentionally exercise both import styles Codex Ch.
+// on modules describes.)
+//
+// STATUS (see CONFORMANCE.md, "Confirmed not yet working"): does not
+// compile against kru0 today. Fails at `use stage5_math` with K1011
+// "expected declaration" -- `use` is lexed as a keyword but has no
+// parser support, and kru0 has no multi-file build story at all (no
+// way to even locate/compile a second .kru file as part of the same
+// program). Tracked in KRU_AGENT_DESIGN.md's task queue.
+//
+// NOTE: this file previously read `use math_utils`, but no
+// math_utils.kru exists anywhere in this tree -- the actual module
+// file is stage5_math.kru. Corrected here so that once `use` lands,
+// this fixture points at a real file instead of failing for an
+// unrelated, easily-missed reason on top of the tracked gap above.
 
-use math_utils
+use stage5_math
 
 pub fn main() -> i32 {
-    // double_it is defined in math_utils.kru
+    // double_it and add_one are defined in stage5_math.kru, imported
+    // unqualified.
     pr(double_it(21))
     pr(add_one(99))
 
-    // Combine imported function with local computation
+    // Combine an imported function with local computation.
     let result := double_it(50)
     pr(result)
+
+    // Chain two imported calls together.
+    pr(add_one(double_it(10)))
+
+    // square is also exported by stage5_math.kru; exercise it too so
+    // this fixture covers every pub declaration in the module it
+    // imports, not just the first two.
+    pr(square(7))
 
     ret 0
 }

@@ -1,0 +1,6 @@
+pub fn main() -> i32 {
+var value: i32
+if true { } else { value = 1 }
+pr(value)
+ret 0
+}

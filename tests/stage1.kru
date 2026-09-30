@@ -1,6 +1,12 @@
 // stage1.kru — Kru Stage 1 conformance test
 // Tests: function params, full operator precedence, control flow,
-//        primitive literals, compound assignment, K1xxx diagnostics
+//        primitive literals, compound assignment, references,
+//        recursion, K1xxx diagnostics
+//
+// This file used to have four siblings (core.kru, math_test.kru,
+// memory.kru, bench.kru) that re-exercised the same stage-1 feature
+// set from slightly different angles. They're folded in here instead
+// of living as separate near-duplicate files.
 
 
 fn add(a: int, b: int) -> int {
@@ -113,6 +119,21 @@ pub fn operator_test() -> int {
     let paren: int := (2 + 3) * 4
     pr(paren)
 
+    // Unary minus interacting with binary operators
+    let a: int := 20
+    let b: int := 6
+    let unary_mixed: int := -a + b
+    pr(unary_mixed)                  // -14
+
+    // Modulus and deeply nested parens
+    let c: int := 3
+    let d: int := 8
+    let modulus: int := (a * d) % 7
+    pr(modulus)                      // 6
+
+    let deeply_nested: int := (((a + 2) * (b + 1)) - ((d - c) * 5)) / 3
+    pr(deeply_nested)                // 43
+
     ret 0
 }
 
@@ -138,11 +159,143 @@ pub fn params_test() -> int {
 }
 
 
+// --- References ---
+// (formerly memory.kru)
+
+pub fn reference_test() -> int {
+    let base: int := 42
+    let reference := ref base
+    let loaded: int := reference@
+    pr(base)      // 42
+    pr(loaded)    // 42
+
+    var counter: int := 10
+    let mr := mut ref counter
+    mr@ = mr@ + 5
+    pr(counter)   // 15
+
+    ret 0
+}
+
+
+// --- Chained/nested arithmetic and variable references ---
+// (formerly core.kru)
+
+pub fn chained_arithmetic_test() -> int {
+    let x: int := 1
+    let a: int := x + 1
+    let b: int := a * 2
+    let c: int := b + 3
+    let d: int := c * 4
+    let e: int := d + 5
+    pr(e)   // 33
+
+    let p: int := 1 + 2 * 3 - 4 / 2
+    let q: int := ((10 + 20) * (30 - 10)) / 5
+    let r: int := p + q * q - p / 2
+    pr(p)   // 5
+    pr(q)   // 120
+    pr(r)   // 14403
+
+    ret r
+}
+
+
+// --- Recursion, iteration, branching stress ---
+// (formerly bench.kru)
+
+fn fib(n: int) -> int {
+    if n <= 1 {
+        ret n
+    }
+    ret fib(n - 1) + fib(n - 2)
+}
+
+fn fact(n: int) -> int {
+    if n <= 1 {
+        ret 1
+    }
+    ret n * fact(n - 1)
+}
+
+fn gcd(a: int, b: int) -> int {
+    var x: int := a
+    var y: int := b
+    loop {
+        if y == 0 {
+            break
+        }
+        let t: int := x % y
+        x = y
+        y = t
+    }
+    ret x
+}
+
+fn primes_below(limit: int) -> int {
+    var count: int := 0
+    var n: int := 2
+    loop {
+        if n > limit {
+            break
+        }
+        var prime: int := 1
+        var d: int := 2
+        loop {
+            if d * d > n {
+                break
+            }
+            if (n % d) == 0 {
+                prime = 0
+                break
+            }
+            d = d + 1
+        }
+        if prime == 1 {
+            count = count + 1
+        }
+        n = n + 1
+    }
+    ret count
+}
+
+pub fn recursion_test() -> int {
+    pr(fib(20))          // 6765
+    pr(fact(10))          // 3628800
+    pr(gcd(1071, 462))    // 21
+    pr(primes_below(500)) // 95
+
+    // Nested loops, still deterministic
+    var sum: int := 0
+    var i: int := 0
+    loop {
+        if i >= 20 {
+            break
+        }
+        var j: int := 0
+        loop {
+            if j >= 20 {
+                break
+            }
+            sum = sum + ((i * j + j) % 13)
+            j = j + 1
+        }
+        i = i + 1
+    }
+    pr(sum)
+
+    ret 0
+}
+
+
 pub fn main() -> int {
     control_flow_test()
     operator_test()
     compound_assign_test()
     params_test()
+    reference_test()
+    chained_arithmetic_test()
+    recursion_test()
 
     // Char literal test
     let c := 'A'

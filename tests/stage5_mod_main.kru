@@ -1,5 +1,13 @@
 // stage5_mod_main.kru
-// Tests: use <module>, calling imported pub functions.
+// Tests: use <module>, calling imported pub functions through the
+// NAMESPACED `stage5_math::` form. (Contrast with stage5_mod.kru,
+// which tests the unqualified `use stage5_math` -> bare `double_it`
+// form instead.)
+//
+// STATUS (see CONFORMANCE.md, "Confirmed not yet working"): does not
+// compile against kru0 today. Fails at `use stage5_math` with K1011
+// "expected declaration", for the same reasons as stage5_mod.kru --
+// no `use` parsing and no multi-file build story yet.
 
 use stage5_math
 
@@ -9,6 +17,9 @@ pub fn main() -> i32 {
 
     let result := stage5_math::double_it(50)
     pr(result)
+
+    pr(stage5_math::add_one(stage5_math::double_it(10)))
+    pr(stage5_math::square(7))
 
     ret 0
 }

@@ -1,0 +1,47 @@
+struct Point { x: i32, y: i32 }
+struct Packet { flag: bool, point: Point, label: str }
+type Grid := [[i32; 2]; 2]
+fn point(x: i32, y: i32) -> Point { ret Point { y: y, x: x } }
+fn packet() -> Packet { ret Packet { flag: true, point: point(3, 4), label: "packet" } }
+fn grid() -> Grid { ret [[1, 2], [3, 4]] }
+fn copy(p: Packet, a: [Point; 2]) -> i32 {
+    var private := p
+    private.point.x = 99
+    var own := a
+    own[0].y = 100
+    ret private.point.x + own[0].y
+}
+fn bump(value: *i32) -> i32 { value@ = 9 ret value@ }
+fn freeze(p: Point, after: i32) -> i32 { ret p.x * 100 + after }
+fn counted(counter: *i32) -> [i32; 2] { counter@ += 1 ret [4, 5] }
+fn many(a: i32, b: i32, c: i32, d: i32, e: i32, f: i32, g: i32, h: i32) -> Point {
+    ret Point { x: a + c*3 + e*5 + g*7, y: b*2 + d*4 + f*6 + h*8 }
+}
+pub fn main() -> i32 {
+    var p := packet()
+    pr(p.point.x * p.point.y)
+    pr(p.flag)
+    pr(p.label)
+    var points: [Point; 2] := [point(1, 2), point(3, 4)]
+    points[1].x += 27
+    pr(points[1].x + points[1].y)
+    pr(copy(p, points))
+    pr(p.point.x)
+    pr(points[0].y)
+    var g: Grid := grid()
+    g[1][0] = 10
+    pr(g[0][1] + g[1][0])
+    var sum := 0
+    for q in points { sum += q.x + q.y }
+    pr(sum)
+    let q := { let inner := point(7, 8) inner }
+    pr(q.x + q.y)
+    pr(freeze(p.point, bump(ref p.point.x)))
+    pr(p.point.x)
+    pr(many(1, 2, 3, 4, 5, 6, 7, 8).x)
+    pr(many(1, 2, 3, 4, 5, 6, 7, 8).y)
+    var counter := 0
+    pr(counted(ref counter).len)
+    pr(counter)
+    ret 0
+}

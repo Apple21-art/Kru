@@ -2,6 +2,27 @@
 // Tests: ref/mut ref, arena, *T + null, mem_alloc/free/realloc,
 //        kru::io (file_open/read/write/close), kru::env (args),
 //        basic module use.
+//
+// STATUS (see CONFORMANCE.md, "Confirmed not yet working"): does not
+// compile against kru0 today. Fails at the very first line, `use
+// kru_io`, with K1011 "expected declaration" -- `use` is lexed as a
+// keyword but the parser has no production for it yet, so nothing
+// past line 6 is exercised by an actual build. There is also no
+// first-party `kru_io`/`kru_env`/`kru_mem`/`kru_result`/`kru_option`
+// module surface implemented yet, and no `as` cast operator, and no
+// `unsafe { <expr> }` block-expression form (only `unsafe fn` at the
+// declaration level works today -- see tests/stage5.kru's
+// pointer_test()).
+//
+// Everything below `use` is otherwise a faithful preview of what
+// Stage 5's *namespaced* surface (as opposed to the un-namespaced
+// global builtins kru0 exposes today, e.g. `mem_alloc` instead of
+// `kru_mem::alloc`) is meant to look like once modules land. Kept in
+// that target shape intentionally, per KRU_AGENT_DESIGN.md's task
+// queue (`.len()` method syntax -> `use` modules -> slices) and the
+// namespacing direction documented in CONFORMANCE.md's implementation
+// profile (`mem`, `io`, `fs`, `str`, `collections` as first-party,
+// import-gated modules).
 
 use kru_io
 use kru_env
@@ -67,7 +88,7 @@ unsafe fn pointer_and_heap_test() -> i32 {
     let pi2: *i32 := p2 as *i32
 
     let v2: i32 := pi2@
-    pr(v2) // 123 (or whatever your realloc does)
+    pr(v2) // 123 -- realloc must preserve the original bytes
 
     kru_mem::free(p2)
 
@@ -84,12 +105,12 @@ unsafe fn pointer_and_heap_test() -> i32 {
 // ---------------------------------------------------------------------------
 
 fn file_io_test() -> kru_result::Result<i32, kru_io::IoError> {
-    let w: kru_io::FileHandle = kru_io::file_open_write("stage5_out.txt")?
+    let w: kru_io::FileHandle := kru_io::file_open_write("stage5_out.txt")?
     kru_io::file_write(mut ref w, "stage5 file write")?
     kru_io::file_close(mut ref w)?
 
-    let r: kru_io::FileHandle = kru_io::file_open("stage5_out.txt")?
-    let content: str = kru_io::file_read(mut ref r)?
+    let r: kru_io::FileHandle := kru_io::file_open("stage5_out.txt")?
+    let content: str := kru_io::file_read(mut ref r)?
     kru_io::file_close(mut ref r)?
 
     pr(kru_io::str_len(ref content))

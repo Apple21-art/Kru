@@ -1,0 +1,3 @@
+pub fn main() -> i32 {
+    ret 6 * 7 + 1
+}

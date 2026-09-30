@@ -1,12 +1,21 @@
 /*
     Stage 2 conformance test.
-    Tests: const, type aliases, structs, field access,
-    struct literals, enums, primitive type mapping.
+    Tests: const (all primitive kinds incl. bool/char/negative), type
+    aliases (incl. alias-of-bool), structs (flat, nested, returned,
+    passed by value, field mutation, field-to-field copies), struct-typed
+    function params/returns, enums (unit variants, equality comparison,
+    implicit int conversion, passing as params), forward-declared
+    functions/structs, and struct-literal vs. block-start disambiguation.
 */
 
 const MAX_USERS: i32 := 100
 const PI: f64 := 314
 const GREETING: str := "hello"
+const ENABLED: bool := true
+const DISABLED: bool := false
+const INITIAL: char := 'Z'
+const NEGATIVE: i32 := -42
+const ZERO: i32 := 0
 
 fn generate_number() -> i32 {
     ret 999
@@ -14,6 +23,7 @@ fn generate_number() -> i32 {
 
 type UserID := u64
 type Score := i32
+type Flag := bool
 
 struct User {
     id: UserID
@@ -24,6 +34,13 @@ struct User {
 struct Point {
     x: i32
     y: i32
+}
+
+// --- Nested struct: struct field whose type is itself a struct ---
+struct Rect {
+    origin: Point
+    width: i32
+    height: i32
 }
 
 enum ResultCode {
@@ -38,6 +55,12 @@ enum Color {
     Blue
 }
 
+enum Status {
+    Idle
+    Active
+    Done
+}
+
 fn add(a: i32, b: i32) -> i32 {
     ret a + b
 }
@@ -49,13 +72,54 @@ fn make_point(x: i32, y: i32) -> Point {
     }
 }
 
+fn make_rect(origin: Point, w: i32, h: i32) -> Rect {
+    ret Rect {
+        origin := origin,
+        width := w,
+        height := h
+    }
+}
+
+fn rect_area(r: Rect) -> i32 {
+    ret r.width * r.height
+}
+
+// Struct passed by value: mutating the parameter must not leak back
+// to the caller's binding.
+fn move_point(p: Point, dx: i32, dy: i32) -> Point {
+    ret Point {
+        x := p.x + dx,
+        y := p.y + dy
+    }
+}
+
+fn status_to_int(s: Status) -> i32 {
+    ret s
+}
+
+fn status_eq(a: Status, b: Status) -> bool {
+    ret a == b
+}
+
+
 pub fn main() -> i32 {
+    // --- const: every primitive flavor exercised, incl. bool/char/negative ---
     pr(MAX_USERS)
     pr(PI)
+    pr(ENABLED)
+    pr(DISABLED)
+    pr(INITIAL)
+    pr(NEGATIVE)
+    pr(ZERO)
 
+    // --- type alias, incl. alias-of-bool ---
     let id: UserID := MAX_USERS
     pr(id)
 
+    let flag: Flag := true
+    pr(flag)
+
+    // --- struct literal, field access ---
     let user := User {
         id := id,
         age := 20,
@@ -80,6 +144,37 @@ pub fn main() -> i32 {
     pr(p2.x)
     pr(p2.y)
 
+    // --- struct field mutation on a `var` binding ---
+    var moving := Point { x := 0, y := 0 }
+    moving.x = 7
+    moving.y = moving.y + 3
+    pr(moving.x)
+    pr(moving.y)
+
+    // --- struct pass-by-value: caller's binding is unaffected by
+    //     mutating a field on the same-named parameter inside a call ---
+    var original := make_point(1, 2)
+    let moved := move_point(original, 5, 5)
+    original.x = 100
+    pr(original.x) // 100 -- local mutation only
+    pr(moved.x)     // 6   -- unaffected copy
+
+    // --- field-to-field copy between distinct struct instances ---
+    var copy_target := Point { x := 0, y := 0 }
+    copy_target.x = original.x
+    copy_target.y = original.y
+    pr(copy_target.x)
+    pr(copy_target.y)
+
+    // --- nested struct: struct field of struct type ---
+    let r := make_rect(Point { x := 1, y := 1 }, 4, 5)
+    pr(r.origin.x)
+    pr(r.origin.y)
+    pr(r.width)
+    pr(r.height)
+    pr(rect_area(r))
+
+    // --- enum: unit variants, implicit int value, comparison, as params ---
     let ok := Ok
     pr(ok)
 
@@ -89,6 +184,21 @@ pub fn main() -> i32 {
     let color := Blue
     pr(color)
 
+    let s1 := Active
+    let s2 := Active
+    let s3 := Done
+    if s1 == s2 {
+        pr(1)
+    }
+    if s1 != s3 {
+        pr(1)
+    }
+    pr(status_to_int(Idle))
+    pr(status_to_int(Done))
+    pr(status_eq(s1, s2))
+    pr(status_eq(s1, s3))
+
+    // --- primitive width coverage ---
     let s: i16 := 42
     pr(s)
 
@@ -98,23 +208,35 @@ pub fn main() -> i32 {
     let f: f32 := 5
     pr(f)
 
+    let small: i8 := -8
+    pr(small)
+
+    let ub: u8 := 255
+    pr(ub)
+
     /*
         Regression: struct literal ambiguity.
-        'flag' is lowercase, so { starts the if-block, not a struct literal.
+        'condition_flag' is lowercase, so { starts the if-block, not a
+        struct literal.
     */
 
-    let flag := 1
-    if flag
+    let condition_flag := 1
+    if condition_flag
     {
         pr(42)
     }
 
     /*
         Regression: forward function call.
-        'helper' is declared after main but forward prototypes make this work.
+        'helper' is declared after main but forward prototypes make this
+        work.
     */
 
     pr(helper(7))
+
+    // 'generate_number' declared above main; call it to make sure it's
+    // not dead-stripped and its return value round-trips correctly.
+    pr(generate_number())
 
     ret 0
 }

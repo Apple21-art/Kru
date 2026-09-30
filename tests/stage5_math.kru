@@ -1,5 +1,15 @@
 // stage5_math.kru
-// Simple math utilities module.
+// Simple math utilities module, `use`d by stage5_mod.kru and
+// stage5_mod_main.kru.
+//
+// STATUS: this file has no `pub fn main()` on purpose -- it's a
+// library fixture, not a standalone test, so compiling it directly
+// with kru0 will parse and codegen cleanly but then fail to LINK
+// ("undefined reference to `main`"). That's expected; it's only
+// meant to be pulled in via `use` by another file. Since `use` isn't
+// implemented yet (see stage5_mod.kru / stage5_mod_main.kru), neither
+// of those importers can actually reach this file's functions today
+// either -- there is no multi-file build story in kru0 at all yet.
 
 pub fn double_it(x: i32) -> i32 {
     ret x + x
@@ -7,4 +17,8 @@ pub fn double_it(x: i32) -> i32 {
 
 pub fn add_one(x: i32) -> i32 {
     ret x + 1
+}
+
+pub fn square(x: i32) -> i32 {
+    ret x * x
 }

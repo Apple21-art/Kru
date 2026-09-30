@@ -227,6 +227,9 @@ static const char* ast_type_name(
     case AST_LOOP_STMT:
         return "LOOP";
 
+    case AST_FOR_STMT:
+        return "FOR";
+
 
     case AST_BREAK_STMT:
         return "BREAK";
