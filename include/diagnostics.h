@@ -98,6 +98,7 @@
             K1039 above.
     K1041   unrecognized integer literal suffix             parse.c
     K1042   for-loop collection is not a known fixed array   codegen.c
+    K1043   unknown identifier                               sema.c
 
     RESERVED — do not reuse (Codex-defined future language errors,
     not yet implemented by this compiler):

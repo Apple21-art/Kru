@@ -25,3 +25,4 @@ check_fail type_mismatch K1002
 check_fail integer_range K1040
 check_fail malformed_expression K1005
 check_fail for_non_array K1042
+check_fail unknown_identifier K1043
