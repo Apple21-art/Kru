@@ -2,11 +2,13 @@
 
 ## Normative source
 
-The authoritative language definition in this tree is:
+The authoritative language/frontend definition in this tree is:
 
-`KRU_CODEX_0_1_ALPHA_REVISED_4.txt`
+`KRU_CODEX_0_1_ALPHA_REVISED_3.txt`
 
-Revision 4 supersedes Revised 3 for this package. Its language syntax/memory philosophy remains based on Revised 3, while the backend architecture is updated to **Kru-owned direct native machine-code emission**. C output is permitted as bootstrap/reference infrastructure; LLVM is not required and is not the canonical backend.
+`KRU_CODEX_0_1_ALPHA_REVISED_4.txt` is treated as backend-direction guidance
+for this bootstrap snapshot (direct native emission), not as a replacement for
+Revised 3 language semantics.
 
 Where compiler behavior differs from the Codex, the Codex wins.
 
@@ -72,6 +74,7 @@ The compile-fail suite verifies currently implemented error behavior:
 - `K1005` — expected expression
 - `K1040` — integer literal does not fit declared type
 - `K1042` — `for ... in` requires a known fixed-size array in the current bootstrap
+- `K1043` — unknown identifier
 
 This update fixed two diagnostic semantic collisions:
 

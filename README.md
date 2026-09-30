@@ -192,6 +192,7 @@ Compile-fail coverage currently pins:
 - K1005 malformed/missing expression
 - K1040 literal out of declared integer range
 - K1042 `for ... in` on a non-array target
+- K1043 unknown identifier (including misspelled bindings/calls)
 
 The diagnostic audit verifies every public diagnostic referenced by `src/` has a registry entry in `include/diagnostics.h`.
 

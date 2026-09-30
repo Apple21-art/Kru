@@ -232,11 +232,33 @@ static bool builtin(
         Kru builtins
     */
 
-    if(node->name_len == 2 &&
-        strncmp(node->name,"pr",2)==0)
+    static const struct
     {
-        return true;
-    }
+        const char* name;
+        uint32_t len;
+    } names[] =
+    {
+        {"pr", 2},
+        {"str_len", 7},
+        {"str_eq", 6},
+        {"str_concat", 10},
+        {"read_int", 8},
+        {"mem_alloc", 9},
+        {"mem_realloc", 11},
+        {"mem_free", 8},
+        {"file_open", 9},
+        {"file_open_write", 14},
+        {"file_read", 9},
+        {"file_write", 10},
+        {"file_close", 10},
+        {"args_count", 10},
+        {"args_get", 8}
+    };
+
+    for(size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++)
+        if(node->name_len == names[i].len &&
+           strncmp(node->name, names[i].name, names[i].len) == 0)
+            return true;
 
 
     return false;
@@ -610,7 +632,6 @@ static int analyze(ASTNode* node)
     }
 
     case AST_WHILE_STMT:
-    case AST_FOR_STMT:
     case AST_LOOP_STMT:
     {
         if(node->child_count == 0)
@@ -628,6 +649,35 @@ static int analyze(ASTNode* node)
 
         int result = analyze(node->children[node->child_count - 1]);
         /* A loop can execute zero times, or break before any assignment. */
+        restore_initialization(states, count);
+        free(states);
+        return result;
+    }
+
+    case AST_FOR_STMT:
+    {
+        if(node->child_count == 0)
+            return -1;
+
+        /* Analyze range/collection expressions before loop scope starts. */
+        for(uint32_t i = 0; i + 1 < node->child_count; i++)
+            if(analyze(node->children[i]) != 0)
+                return -1;
+
+        InitState* states;
+        size_t count;
+        if(save_initialization(&states, &count) != 0)
+            return -1;
+
+        push_scope();
+        if(node->name && node->name_len)
+            add_symbol(node->name, node->name_len, false, false, true);
+
+        int result = analyze(node->children[node->child_count - 1]);
+
+        pop_scope();
+
+        /* A for-loop can execute zero times. */
         restore_initialization(states, count);
         free(states);
         return result;
@@ -766,12 +816,40 @@ static int analyze(ASTNode* node)
             if(!sym)
             {
                 /*
-                    Stage0:
-                    allow unresolved names.
-                    Parser/codegen are still evolving.
+                    Preserve enum-constructor and enum-pattern tolerance:
+                    unresolved uppercase names are still accepted here and
+                    handled later by codegen/pattern logic.
                 */
+                if(node->name_len > 0 &&
+                   node->name[0] >= 'A' &&
+                   node->name[0] <= 'Z')
+                    return 0;
 
-                return 0;
+                char message[96];
+
+                snprintf(
+                    message,
+                    sizeof(message),
+                    "unknown identifier '%.*s'",
+                    node->name_len,
+                    node->name
+                    );
+
+                Diagnostic diag =
+                {
+                    .severity = "error",
+                    .code = "K1043",
+                    .message = message,
+                    .line = node->line,
+                    .column = node->column,
+                    .underline_length = node->name_len,
+                    .explanation = "This name is not declared in the current scope and is not a known Kru builtin.",
+                    .suggested_fix = "declare the binding/function first, or correct the spelling"
+                };
+
+                diagnostic_print(&diag);
+
+                return -1;
             }
 
 
