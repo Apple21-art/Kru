@@ -1,0 +1,10 @@
+comptime fn sum(limit:i32)->i32 {
+ var i:=0
+ var result:=0
+ while i<limit {result+=i;i+=1}
+ ret result
+}
+const ANSWER:i32 := sum(10)
+const NEXT:i32 := ANSWER+1
+comptime {let checked:=sum(4)}
+pub fn main()->i32 {pr(ANSWER);pr(NEXT);ret 0}

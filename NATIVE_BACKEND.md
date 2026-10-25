@@ -2,52 +2,43 @@
 
 ## Current implementation
 
-`src/native_backend.c` emits Linux x86-64 ELF64 and machine instructions directly.
-The compiler's native path invokes no assembler, linker, LLVM, host C compiler,
-or embedded interpreter. Generated programs use a checked-in freestanding Linux
-syscall runtime. The compiler itself is C and uses the host C library.
+`src/native_backend.c` writes Linux x86-64 ELF64 and machine instructions directly.
+It invokes no C compiler, assembler, linker, LLVM, or embedded interpreter. The
+checked-in runtime uses Linux syscalls without libc. Building the compiler itself
+requires a GNU11 C compiler and the host C library.
 
-Supported and execution-tested:
+Execution-tested capabilities:
 
-- `i32`/`int`, `bool`, C-string-backed `str`, raw `*i32` pointers, enum
-  identities and aliases for supported scalar and aggregate types; constants of
-  supported expression kinds.
-- Functions, recursion, void and aggregate returns, up to 32 source parameters.
-  Scalar arguments use six System V registers plus stack arguments. Arguments
-  evaluate left to right; nested calls
-  preserve earlier arguments. Integer results normalize to signed 32-bit values.
-- Locals, lexical and same-scope shadowing, assignments and compound arithmetic,
-  shifts and bitwise operators, signed comparisons, short-circuit Boolean logic.
-- `if`/`else`, `while`, `loop`, unlabelled `break`/`continue`, exclusive integer
-  range loops, block expressions and enclosing-function returns. Loop transfers
-  unwind pending expression temporaries.
-- Fixed arrays of supported scalar and aggregate types, including nested arrays:
-  literals, declared zero filling, aliases, copying, by-value parameters and
-  returns, indexing, mutation, `.len`/`.len()` and value iteration. `ref` iteration is
-  supported over i32 arrays. Dynamic bounds violations trap with `ud2`.
-- Named structs with declaration-order padded layout, typed literals, nested
-  fields, mutation, copying, by-value parameters and returns. Aggregate call
-  arguments are snapshotted before later arguments can mutate their source,
-  and callees receive private copies.
-- Scalar and payload enums, including i32, str, bool, struct and fixed-array payloads,
-  aggregate copies/returns and enum arrays; literal/enum match statements,
-  qualified constructors and match arms, multiple payload bindings and catch-all
-  bindings. Enum matches must cover every variant or have a catch-all. Integer
-  and bool matches currently require a catch-all.
-- `pr` of one integer/bool/scalar-enum/string, `str_len`, content-based `str_eq` and
-  string `==`/`!=`, `str_concat`, string `.len`/`.len()` and checked byte
-  indexing returning an unsigned byte as i32; decoded string escapes, raw
-  literals and UTF-8 escapes. Negative and out-of-bounds indices trap.
-- Bootstrap `file_open`, `file_open_write`, `file_close`, `file_write`,
-  `file_read`, `mem_alloc`, `mem_free`, `mem_realloc`, `args_count`, `args_get`.
-  File reads grow dynamically; writes handle partial writes. Memory helpers use
-  explicit mmap/munmap storage. Invalid file handles use -1 internally.
-
-The entry is a zero-parameter `main` returning i32/int. Functions with results
-must satisfy a conservative definite-return analysis. Unix exposes the low
-8 bits of a program's exit status. Arithmetic faults use processor traps.
-Duplicate struct fields/enum variants and unsupported secure declarations are
-rejected; secure wiping/encryption semantics are not implemented.
+- Signed/unsigned integers through 128 bits, pointer-sized integers, f32/f64 SSE
+  operations, Unicode scalar chars, checked casts including wide integer/float
+  conversions, primitive matching and typed aggregate storage.
+- Functions, recursion, scalar/aggregate returns, mixed GP/SSE/stack arguments,
+  left-to-right evaluation, lexical shadowing and short-circuit logic.
+- Fixed arrays, nested structs, payload enums, typed references and dynamic-length
+  slices; bounds checks, range slicing, reference mutation and collection loops.
+- 16-byte `str` descriptors containing a data pointer and byte length. Embedded
+  zero bytes survive calls, aggregate copies, printing, concatenation and file I/O.
+  UTF-8 literals and string ranges are checked. String indexing returns an
+  unsigned byte as i32; legacy `.len` and length helpers still return i32.
+- Source modules, public imports and qualified names; explicit generic
+  specialization and argument inference; concrete trait bounds and implementation
+  signatures; receiver methods and Option/Result propagation.
+- Fuel-bounded compile-time scalar evaluation, value blocks, integer range loops,
+  constants and pure function calls. No evaluator is embedded in executables.
+- Owned-value transfers, destruction at scope exits and returns, replacement,
+  branch alternatives and payload matching. Uninitialized owners have inactive
+  destruction flags. Local reference and String-view returns are rejected for
+  the structural cases currently tracked.
+- Source-distributed String, I/O, memory, environment, Option and Result modules.
+  `String.from`, `as_str`, `push_str` and owned `concat` use length-bearing views.
+  Checked I/O reports invalid UTF-8 and embedded-zero paths as errors.
+- CFG-based direct-reference liveness and reaching-loan analysis. Reference
+  copies, assignments, block tails, returned borrowed values, str views and
+  slices retain tracked origins across branches and loops. Conflicting direct
+  accesses, overlapping mutable aliases and use after source-scope exit are
+  rejected for tracked loans. Mutation after the last reference use is allowed.
+- Secure struct storage wiping and secure-function frame/register clearing;
+  complete SecureString/encryption semantics remain unimplemented.
 
 ## Run and measure
 
@@ -55,51 +46,86 @@ In fish:
 
 ```fish
 make
-./build/kru0 --time --run-native tests/stage5.kru
+./build/kru0 --time --run-native tests/stage4.kru
 echo $status
+./build/kru0 --time --run-native tests/stage5.kru
 make bench
 ```
 
-`--emit-native input.kru output` compiles only. `--run-native` compiles and
-executes, forwarding the program's exit status; the default output is `a.out`.
-`--time` excludes program runtime. Benchmark samples include process startup.
-The Stage4 and Stage5 execution regressions compare stdout against the C
-reference and check the ELF has no interpreter. Stage5 also compares generated
-file bytes. Aggregate and string fixtures check exact output and edge cases.
+`--emit-native input.kru output` compiles only. `--run-native` compiles and runs,
+forwarding the exit status; default output is `a.out`. `--time` excludes program
+runtime. Benchmark process measurements include process startup.
+
+## Verification
+
+`make check` runs release, ASan/UBSan and stress gates. In environments where
+LeakSanitizer cannot operate under ptrace, use:
+
+```sh
+make check SAN_ASAN_OPTIONS=detect_leaks=0:halt_on_error=1
+```
+
+The six former expected-unimplemented fixtures now have mandatory native output
+checks. Stages 1–5 and full.kru execute natively. Tests exercise ELF independence
+from host tools, file bytes, mixed calls, numeric boundaries, invalid input,
+cleanup, UTF-8 and embedded-zero strings. Reviewed native golden output replaces
+C comparisons where the C bootstrap's character/float/string semantics differ.
 
 ## Runtime maintenance
 
-`include/native_runtime_blob.h` is checked in. `tools/native_runtime.S` contains
-its readable assembly; `tools/generate_native_runtime.py` regenerates the header
-using development-time assembler/linker tools. Neither regeneration nor those
-tools are needed to build kru0 or emit/run native programs. The reproducibility
-test regenerates an isolated copy and compares bytes.
+`include/native_runtime_blob.h` is generated offline from
+`tools/native_runtime.S` and `tools/native_numeric_runtime.c` using
+`tools/generate_native_runtime.py`. Regeneration needs development-time cc/ld
+and binutils; user program compilation does not. Relocations must be PC-relative;
+nonempty allocated sections omitted from the blob are rejected. Tests regenerate
+an isolated copy and compare bytes.
 
-## Explicit remaining work
+## Remaining requirements
 
-The complete `tests/stage4.kru` fixture and the Stage5 core fixture compile and
-execute natively with C-reference parity. This is **not full Codex conformance**.
-Missing areas include:
+Full Codex conformance is still pending. Important gaps include the production
+resolved HIR/CFG MIR pipeline; complete borrowing and ownership analysis of
+partial places and regions; arena allocation and kill rules; full generic/context
+inference, generic traits and defaults; closures, destructuring and guarded
+patterns; full compile-time aggregate operations; complete core APIs and secure
+storage/encryption; labeled flow and full panic diagnostics; object output,
+linking, public aggregate ABI, debug information and additional targets.
 
-- Other integer widths, floating point, char, full reference types and typing.
-- Slices, complete tuple/default struct syntax and destructuring patterns,
-  public/external aggregate ABI classification, function pointers and closures.
-- Codex str slices and owned strings (current helpers use NUL-terminated bytes),
-  library modules and complete I/O methods.
-- Typed HIR/MIR, modules, generics, traits/impl, Result/Option propagation,
-  comptime, lifetime/borrow/move/drop enforcement, arenas and secure values.
-- Full structured backend diagnostics, labeled control flow, pattern guards and
-  alternation, exact shift-count/cast policies, complete type checking.
-- Object output/linking, debug information, additional targets, PIE, explicit
-  stack protection and the rest of the Codex hardening requirements.
+Aggregate calls currently use a private pointer-to-copy convention with hidden
+caller-owned return storage. This is not a public C/System V aggregate ABI.
+Unsafe raw-pointer requirements and all reference lifetime guarantees are not yet
+enforced. Legacy `str_concat`/file-read helpers allocate backing storage without a
+complete ownership API; prefer owned String operations where available.
+Implementation limits include 1 MiB code/data, 2048 storage units, 512 function
+symbols, 32 source arguments and 8192 fixups. Passing regression tests is not a
+claim of complete memory safety or specification coverage.
 
-Fixed limits include 1 MiB emitted code/data, 2048 storage units, 2048 array
-shapes, 512 function symbols (including helpers), 32 source arguments and 8192
-fixups. These are implementation limits, not language limits. Aggregate arguments
-use an internal Kru pointer-to-copy convention; aggregate results use hidden
-first-argument caller-provided return storage, including calls with stack
-arguments. This is not the external System V struct classifier or a public C ABI.
-Raw pointers and refs currently lack the Codex safety guarantees. No complete
-language or memory-safety claim follows from these regression tests.
+Reference analysis still lacks complete aggregate-contained provenance,
+projected places, nested references/reborrows and arena invalidation. General
+borrowed function results conservatively inherit all borrowed arguments;
+explicit runtime summaries identify independent allocated/process-owned string
+results. Precise function summaries remain pending. Mutable alias copies may be
+rejected conservatively where a complete reborrow analysis could allow them.
 
-See `docs/NATIVE_CODEX_AUDIT.md` for the full chapter-by-chapter obligation matrix.
+Whole-owner availability is checked over the emitted control-flow graph with a
+fixed-point analysis, including loop back edges, early returns and branch joins.
+Discarding an owner, transferring a block tail and propagating an owned payload
+with `?` invalidate the source. Partial moves from fields, indices or borrowed
+storage remain rejected until per-place cleanup is implemented.
+
+### Runtime regeneration across toolchains
+
+The checked-in runtime is generated offline from assembly and freestanding C.
+GCC/binutils versions and flags may produce different valid bytes and symbol
+offsets. `make check` verifies a source fingerprint and checks two regenerations
+with the current toolchain for byte identity. It always executes the checked-in
+runtime. If locally regenerated bytes differ, it also builds an isolated compiler
+and runs runtime edge, float and i128 tests against that local runtime.
+The checkout is never rewritten by the test.
+
+For a release environment using the original pinned toolchain and flags, set
+`KRU_RUNTIME_STRICT_REPRO=1` to additionally require checked-in byte identity.
+Source changes require `python3 tools/generate_native_runtime.py`; ordinary Kru
+compilation still needs no external assembler, linker or C compiler.
+A changed function-alignment setting was used to reproduce the original false
+failure and verify the alternate-runtime path. GCC 14.2/binutils 2.44 were not
+available in this environment, so this is not a claim of testing those versions.

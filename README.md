@@ -1,47 +1,52 @@
 # Kru
 
-Kru is a systems programming language I've been making from scratch. It's partly for school, but mainly just something I started because I wanted to see if I could make my own language. I'm still learning as I go, and there's plenty I want to improve. This repo is where I'm keeping the actual releases, including the rough ones.
+Kru is a systems programming language I've been making from scratch. It's partly for school, but mainly a personal project I started because I wanted to see if I could make my own language. I'm still learning as I go, and there's a lot I want to improve.
 
-This is the **September 30, 2026 native compiler snapshot**. It's the latest *working snapshot in this archive set that I checked*, not a claim that my newer local development stops here.
+## About this version
 
-## What Kru is trying to do
+This is **v0.3.0-alpha.0**, a historical October 7–8, 2026 snapshot published on October 25. It's not my newest development build, and I don't consider Kru finished or ready for production use. See [the release notes](RELEASE.md) for what changed and what failed during this archive's recheck.
 
-I want Kru to be a systems language that can eventually compile itself and write actual machine code. The plan is a proper compiler with a type system, ownership rules, and a native backend, without quietly handing code generation off to LLVM or a host C compiler.
+The compiler is still built with C, but it can also compile supported Kru programs straight into Linux x86-64 machine code and write ELF64 executables itself. That native code-generation path doesn't call GCC, LLVM, an assembler, or a linker. The C-output path is kept for comparison and bootstrap work.
 
-## What this version can do
+## Build and try it
 
-The compiler is still bootstrapped in C. It has a C reference backend, plus a separate experimental backend that writes **Linux x86-64 ELF files directly**. That native backend executes a tested subset of functions, control flow, structs, arrays, enums and simple file/memory operations.
-
-This is not full Codex parity, complete memory safety, or self-hosting. Read [the exact native limits](NATIVE_BACKEND.md) and [the conformance status](CONFORMANCE.md) before assuming something works.
-
-## Build / run (Linux x86-64, GCC or Clang)
+You need Linux x86-64, GNU Make, and a GNU11 C compiler to **build the Kru compiler**:
 
 ```sh
 make
-make test
-./build/kru0 --emit-native tests/hello.kru ./hello
-./hello
-echo $? # 42, the program's expected exit status
+./build/kru0 --emit-native tests/hello.kru /tmp/kru-hello
+/tmp/kru-hello
+echo $?
+# 42
 ```
 
-Or run the tested Stage 4 fixture:
+To generate C instead:
 
 ```sh
-./build/kru0 --emit-native tests/stage4.kru ./stage4
-./stage4
+./build/kru0 --emit-c tests/hello.kru /tmp/kru-hello.c
 ```
 
-`make` builds the **compiler itself** using a host C compiler. `--emit-native` generates the **target program** without LLVM, an assembler or linker. Those are two different things.
+## Testing
 
-For compiler sanitizers and stress suites there are `make debug`, `make stress`, and `make check`. The latter is a larger gate than `make test`.
+```sh
+make test
+```
 
-## Where things stand
+**Known issue:** `make test` does not pass completely in this archived snapshot. During recheck on October 25, the suite reached 220 PASS lines and then failed in `tools/test_bootstrap_string_cleanup.sh` because the generated C assigned a string-concatenation result to an integer variable. I didn't change the compiler source to hide this in an old release. See [release notes](RELEASE.md) and [the verification note](docs/SNAPSHOT_VERIFICATION_2026-10-25.md).
 
-- Native Stage 4 fixture: built and ran in a fresh verification.
-- `make test`: passed on October 25, 2026.
-- Full typed IR, real ownership/moves/borrows, modules, generics, slices, full ABI and self-hosting: still unfinished in this snapshot.
-- The Codex describes the goal, **not** a claim that every part already works.
+Some tests require Bash, Python 3, ripgrep, binutils, and other common Linux development utilities. See the Makefile and scripts for dependencies.
 
-More information: [timeline](docs/RELEASE_HISTORY.md) · [native backend](NATIVE_BACKEND.md) · [Codex audit](docs/NATIVE_CODEX_AUDIT.md) · [performance measurement](PERFORMANCE.md) · [release notes](RELEASE_NOTES.md).
+## Where things are
 
-MIT licensed. See [LICENSE](LICENSE).
+- `src/`, `include/` — compiler and native runtime interfaces
+- `lib/` — early Kru library modules
+- `tests/` — compiler, runtime, and invalid-program test cases
+- `tools/` — build, testing, runtime regeneration, and benchmarks
+- `KRU_CODEX_0_1_ALPHA_REVISED_4.txt` — intended language specification for this snapshot
+- `CONFORMANCE.md`, `NATIVE_BACKEND.md` — feature coverage and limitations
+- `docs/OVERHAUL_PROGRESS.md` — historical implementation notes
+- `PERFORMANCE.md` — what was measured, when, and the limits of the numbers
+
+The Codex describes what I want Kru to become. The compiler doesn't implement all of it yet.
+
+**Status:** experimental, still being worked on.

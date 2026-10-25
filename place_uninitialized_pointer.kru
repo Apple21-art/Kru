@@ -1,0 +1,3 @@
+pub fn main() -> i32 { var pointer: *i32
+pointer@ = 3
+ret 0 }

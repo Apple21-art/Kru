@@ -1,0 +1,4 @@
+pub fn main() -> i32 {
+    let value: u8 := 300u8
+    ret value
+}

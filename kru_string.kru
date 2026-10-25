@@ -1,0 +1,22 @@
+pub struct String { data:*u8, length:usize, capacity:usize }
+impl String {
+ fn new()->String {
+  ret String{data:=__kru_alloc(1),length:=0usize,capacity:=1usize}
+ }
+ fn push_str(mut ref self,text:str) {__kru_string_push(self,text)}
+ fn as_str(ref self)->str {ret __kru_string_view(self)@}
+ fn from(text:str)->String {
+  var value:=String{data:=__kru_alloc(1),length:=0usize,capacity:=1usize}
+  __kru_string_push(mut ref value,text)
+  ret value
+ }
+ fn len(ref self)->usize {ret self.length}
+ fn drop(mut ref self) {__kru_string_drop(self)}
+}
+
+pub fn concat(a:str,b:str)->String {
+ var value:=String{data:=__kru_alloc(1),length:=0usize,capacity:=1usize}
+ __kru_string_push(mut ref value,a)
+ __kru_string_push(mut ref value,b)
+ ret value
+}

@@ -1,0 +1,6 @@
+use kru_option
+pub fn args_count()->i32 {ret __kru_args_count()}
+pub fn args_get(index:i32)->kru_option::Option<str> {
+ if index<0 || index>=__kru_args_count() {ret kru_option::None}
+ ret kru_option::Some(__kru_args_get(index))
+}
