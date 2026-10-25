@@ -1,0 +1,31 @@
+fn sum(a: u128, b: u128) -> u128 { ret a+b }
+fn many(a: u128,b: u128,c: u128,d: u128,e: u64,f: u128) -> u128 {
+    ret a+b+c+d+cast<u128>(e)+f
+}
+pub fn main() -> i32 {
+    let maximum := 340282366920938463463374607431768211455u128
+    let minimum := -170141183460469231731687303715884105728i128
+    pr(maximum)
+    pr(minimum)
+    pr(sum(18446744073709551616u128, 42u128))
+    pr(maximum / 3u128)
+    pr(maximum % 3u128)
+    pr(18446744073709551616u128 * 2u128)
+    pr(maximum >> 127u128)
+    pr(minimum >> 127i128)
+    pr(1u128 << 100u128)
+    pr(maximum > 170141183460469231731687303715884105728u128)
+    pr(minimum < -1i128)
+    var array: [u128; 2] := [18446744073709551616u128, 42u128]
+    array[0] += 1u128
+    pr(array[0])
+    pr(array[1])
+    pr(many(1u128,2u128,3u128,4u128,5u64,18446744073709551616u128))
+    let one := 1u128
+    let minus_one := -1i128
+    pr(cast<u64>(one))
+    pr(cast<i64>(minus_one))
+    pr(cast<i128>(-9223372036854775808i64))
+    pr(cast<u128>(18446744073709551615u64))
+    ret 0
+}

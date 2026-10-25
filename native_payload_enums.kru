@@ -1,0 +1,26 @@
+struct Point { x: i32, y: i32 }
+enum Value { Empty, Number(i32), Text(str), Pair(Point), Flag(bool) }
+fn number(n: i32) -> Value { ret Number(n) }
+fn evaluate(v: Value) -> i32 {
+    match v {
+        Value.Empty => { ret 0 }
+        Number(n) => { ret n * 2 }
+        Text(s) => { ret s.len }
+        Pair(p) => { ret p.x + p.y }
+        Flag(b) => { if b { ret 1 } else { ret 0 } }
+    }
+}
+pub fn main() -> i32 {
+    pr(evaluate(Value.Empty))
+    pr(evaluate(number(21)))
+    pr(evaluate(Text("tagged")))
+    pr(evaluate(Pair(Point { x: 3, y: 4 })))
+    pr(evaluate(Flag(true)))
+    var values: [Value; 3] := [Value.Empty, number(5), Text("abc")]
+    var sum := 0
+    for v in values { sum += evaluate(v) }
+    pr(sum)
+    values[0] = number(7)
+    pr(evaluate(values[0]))
+    ret 0
+}

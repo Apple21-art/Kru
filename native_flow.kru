@@ -1,0 +1,17 @@
+pub fn main() -> i32 {
+    let seed := 3
+    var sum := 0
+    var i := 0
+    while i < 7 {
+        i += 1
+        if i == 3 { continue }
+        if i > 5 { break }
+        let seed := i * 2
+        sum += seed
+    }
+    if sum == 24 && seed == 3 {
+        ret sum + seed
+    } else {
+        ret 99
+    }
+}

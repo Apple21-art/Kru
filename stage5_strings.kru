@@ -1,0 +1,53 @@
+// Native module/String integration, using the Codex Chapter 20 value-slice API.
+
+use kru_string
+use kru_io
+
+fn string_test() -> i32 {
+    let s1: str := "Hello, Kru Stage 5!"
+    pr(kru_io::str_len(ref s1))
+
+    var buf: kru_string::String := kru_string::String::new()
+    buf.push_str("stage5")
+    buf.push_str(" file write")
+
+    let s2: str := buf.as_str()
+    pr(kru_io::str_len(ref s2))
+
+    if kru_io::str_eq(ref s1, ref s1) {
+        pr(1)
+    } else {
+        pr(0)
+    }
+
+    // Distinct-value equality check, not just a value compared with
+    // itself: makes sure a correct implementation can't get away with
+    // a pointer-identity shortcut.
+    let s3: str := "Hello, Kru Stage 5!"
+    if kru_io::str_eq(ref s1, ref s3) {
+        pr(1)
+    } else {
+        pr(0)
+    }
+
+    let s4: str := "something else entirely"
+    if kru_io::str_eq(ref s1, ref s4) {
+        pr(1)
+    } else {
+        pr(0)   // expected: distinct contents compare unequal
+    }
+
+    // The buffer built above should equal an equivalent literal.
+    if kru_io::str_eq(ref s2, ref "stage5 file write") {
+        pr(1)
+    } else {
+        pr(0)
+    }
+
+    ret 0
+}
+
+pub fn main() -> i32 {
+    string_test()
+    ret 0
+}

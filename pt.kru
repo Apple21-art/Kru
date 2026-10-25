@@ -1,0 +1,159 @@
+// ============================================================
+// Kru Text Adventure: Dungeon Escape
+// ============================================================
+
+enum Location
+{
+    Entrance,
+    Hallway,
+    Armory
+}
+
+fn print_header(title: str)
+-> void
+{
+    pr("========================================")
+    pr(title)
+    pr("========================================")
+}
+
+pub fn main()
+-> i32
+{
+    var current_room := Location.Entrance
+    var has_key      := false
+    var is_running   := true
+
+    print_header("   DUNGEON ESCAPE TEXT ADVENTURE   ")
+    pr("Goal: Explore the dungeon, find the key, and unlock the exit!")
+
+    while is_running
+    {
+        pr("")
+
+        match current_room
+        {
+            Location.Entrance => {
+                print_header("LOCATION: Entrance Hall")
+                pr("You stand in front of a heavy, locked steel door.")
+                pr("1) Go down the dark Hallway")
+                pr("2) Try to unlock the exit door")
+                pr("3) Quit Game")
+
+                let choice := read_int("What do you want to do? ")
+
+                match choice
+                {
+                    1 => {
+                        current_room = Location.Hallway
+                    }
+                    2 => {
+                        if has_key
+                        {
+                            print_header("   VICTORY!   ")
+                            pr("You turn the brass key in the lock... The door opens!")
+                            pr("You escaped the dungeon successfully!")
+                            is_running = false
+                        }
+                        else
+                        {
+                            pr(">>> The door is locked tight. You need to find a key!")
+                        }
+                    }
+                    3 => {
+                        pr("You give up and sit in the dark...")
+                        is_running = false
+                    }
+                    n => {
+                        if n == 0 {
+                            pr(">>> Input closed. Exiting game.")
+                            is_running = false
+                        } else {
+                            pr(">>> Invalid choice. Select 1, 2, or 3.")
+                        }
+                    }
+                }
+            }
+
+            Location.Hallway => {
+                print_header("LOCATION: Dark Hallway")
+                pr("Cobwebs cover the walls. Flaming torches illuminate two paths.")
+                pr("1) Enter the Armory on your left")
+                pr("2) Return to the Entrance Hall")
+
+                let choice := read_int("What do you want to do? ")
+
+                match choice
+                {
+                    1 => {
+                        current_room = Location.Armory
+                    }
+                    2 => {
+                        current_room = Location.Entrance
+                    }
+                    n => {
+                        if n == 0 {
+                            pr(">>> Input closed. Exiting game.")
+                            is_running = false
+                        } else {
+                            pr(">>> Invalid choice. Select 1 or 2.")
+                        }
+                    }
+                }
+            }
+
+            Location.Armory => {
+                print_header("LOCATION: Old Armory")
+
+                if has_key
+                {
+                    pr("Racks of rusted weapons line the walls. The room is empty.")
+                    pr("1) Return to the Hallway")
+
+                    let choice := read_int("What do you want to do? ")
+
+                    match choice
+                    {
+                        1 => {
+                            current_room = Location.Hallway
+                        }
+                        n => {
+                            if n == 0 {
+                                pr(">>> Input closed. Exiting game.")
+                                is_running = false
+                            } else {
+                                pr(">>> Invalid choice. Enter 1 to leave.")
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    pr("Old shields hang on the wall. On a wooden table sits a shiny brass key!")
+                    pr("1) Pick up the key")
+                    pr("2) Return to the Hallway")
+
+                    let choice := read_int("What do you want to do? ")
+
+                    match choice
+                    {
+                        1 => {
+                            has_key = true
+                            pr(">>> You picked up the Brass Key!")
+                        }
+                        2 => {
+                            current_room = Location.Hallway
+                        }
+                        n => {
+                            pr(">>> Invalid choice. Select 1 or 2.")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    pr("")
+    print_header("      GAME OVER      ")
+    ret 0
+}
