@@ -1,7 +1,0 @@
-struct Pair { left: i32, right: i32 }
-pub fn main() -> i32 {
-    var pair := Pair { left: 10, right: 20 }
-    pair.left += 12
-    pr(pair.left + pair.right)
-    ret 0
-}

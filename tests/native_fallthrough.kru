@@ -1,3 +1,0 @@
-pub fn main() -> i32 {
-    if false { ret 1 }
-}

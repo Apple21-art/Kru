@@ -1,8 +1,0 @@
-comptime fn doubled(n:u32)->u32 {ret n*2}
-const LIMIT:u32:=comptime {var n:u32:=4;n+=2;doubled(n)}
-pub fn main()->i32 {
- let local:=comptime {var total:=0;for i in 0..5 {total+=i};total}
- pr(LIMIT)
- pr(local)
- ret 0
-}

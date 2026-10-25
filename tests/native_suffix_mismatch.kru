@@ -1,3 +1,0 @@
-pub fn main() -> i32 {
-    ret 1u64
-}

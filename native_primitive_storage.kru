@@ -1,7 +1,0 @@
-pub fn main() -> i32 {
-    var wide := 1u128
-    wide += { wide = 10u128 1u128 }
-    pr(wide)
-    pr(10 + { var unused: [i32; 4] 1 })
-    ret 0
-}

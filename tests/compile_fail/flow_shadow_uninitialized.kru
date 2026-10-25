@@ -1,5 +1,0 @@
-pub fn main() -> i32 {
-var value: i32
-let value := value + 1
-ret 0
-}

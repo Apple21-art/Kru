@@ -1,7 +1,0 @@
-struct Owned { number:i32 }
-impl Owned {fn drop(mut ref self) {pr(self.number)}}
-pub fn main()->i32 {
- let value:Owned := {let inner:=Owned{number:=30};inner}
- pr(value.number)
- ret 0
-}

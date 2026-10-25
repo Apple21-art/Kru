@@ -1,4 +1,0 @@
-pub fn main() -> i32 {
-    pr(unknown_value)
-    ret 0
-}

@@ -1,4 +1,0 @@
-pub fn main() -> int
-{
-    ret 42
-}

@@ -1,9 +1,0 @@
-trait Addable {fn add(self,other:Self)->Self}
-trait Readable {fn read(ref self)->i32}
-struct Number {value:i32}
-impl Addable for Number {
- fn add(self,other:Self)->Self {ret Number {value:self.value+other.value}}
-}
-impl Readable for Number {fn read(ref self)->i32 {ret self.value}}
-fn combine<T:Addable + Readable>(a:T,b:T)->i32 {let total:=a.add(b);ret total.read()}
-pub fn main()->i32 {pr(combine(Number {value:20},Number {value:22}));ret 0}
