@@ -1,0 +1,21 @@
+struct Bits { a: bool, b: bool, c: bool }
+struct Row { data: [i32; 3] }
+struct EmptyArray { data: [i32; 0], x: i32 }
+pub fn main() -> i32 {
+    var bits: [Bits; 2] := [Bits { a: true, b: false, c: true }, Bits { a: false, b: true, c: false }]
+    bits[1].c = true
+    pr(bits[0].b)
+    pr(bits[1].b)
+    pr(bits[1].c)
+    let padded: [[i32; 3]; 2] := [[7], [8, 9]]
+    pr(padded[0][2] + padded[1][1])
+    let row := Row { data: [5] }
+    pr(row.data.len + row.data[0] + row.data[2])
+    let empty := EmptyArray { data: [], x: 42 }
+    pr(empty.data.len + empty.x)
+    var values := [10, 20]
+    let pointers: [*i32; 2] := [ref values[0], ref values[1]]
+    pointers[1]@ += 2
+    pr(values[1])
+    ret 0
+}

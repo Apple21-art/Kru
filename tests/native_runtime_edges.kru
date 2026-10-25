@@ -1,0 +1,69 @@
+// Freestanding runtime boundaries shared with the C-reference implementation.
+pub fn main() -> i32 {
+    let zero: *i32 := mem_alloc(0)
+    let negative: *i32 := mem_alloc(-1)
+    if zero != null { ret 1 }
+    if negative != null { ret 2 }
+    mem_free(zero)
+    let fresh: *i32 := mem_realloc(null, 8)
+    if fresh == null { ret 3 }
+    fresh@ = 123456789
+    let second: *i32 := fresh + 1
+    second@ = -654321
+    let grown: *i32 := mem_realloc(fresh, 20000)
+    if grown == null { ret 4 }
+    if grown@ != 123456789 { ret 5 }
+    let grown_second: *i32 := grown + 1
+    if grown_second@ != -654321 { ret 6 }
+    pr(grown@)
+    pr(grown_second@)
+    let shrunk: *i32 := mem_realloc(grown, 4)
+    if shrunk == null { ret 7 }
+    if shrunk@ != 123456789 { ret 8 }
+    let released: *i32 := mem_realloc(shrunk, 0)
+    if released != null { ret 9 }
+    let another: *i32 := mem_alloc(4)
+    if another == null { ret 10 }
+    let released_negative: *i32 := mem_realloc(another, -9)
+    if released_negative != null { ret 11 }
+
+    let missing := file_open("native-runtime-missing-file")
+    if missing != null { ret 12 }
+    if str_len(file_read(missing)) != 0 { ret 13 }
+    file_close(missing)
+    let empty_write := file_open_write("native-runtime-empty.txt")
+    if empty_write == null { ret 14 }
+    file_close(empty_write)
+    let empty_read := file_open("native-runtime-empty.txt")
+    if empty_read == null { ret 15 }
+    if !str_eq(file_read(empty_read), "") { ret 16 }
+    file_close(empty_read)
+
+    let output := file_open_write("native-runtime-offset.txt")
+    if output == null { ret 17 }
+    file_write(output, "current-position")
+    file_close(output)
+    let input := file_open("native-runtime-offset.txt")
+    if input == null { ret 18 }
+    if !str_eq(file_read(input), "current-position") { ret 19 }
+    // The second read must start at EOF, rather than rewinding the descriptor.
+    if !str_eq(file_read(input), "") { ret 20 }
+    file_close(input)
+
+    var reassigned := file_open("/definitely-not-present-kru-test")
+    reassigned = null
+    if reassigned != null { ret 25 }
+
+    pr(-2147483648)
+    pr(2147483647)
+    pr(0)
+    if args_count() != 3 { ret 21 }
+    if !str_eq(args_get(-1), "") { ret 22 }
+    if !str_eq(args_get(args_count()), "") { ret 23 }
+    if !str_eq(args_get(2147483647), "") { ret 24 }
+    pr(args_count())
+    pr(args_get(1))
+    pr(args_get(2))
+    pr("runtime-edges-ok")
+    ret 0
+}

@@ -1,0 +1,2 @@
+fn size(value: str) -> i32 { ret str_len(value) }
+pub fn main() -> i32 { ret size(null) }

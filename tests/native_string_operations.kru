@@ -1,0 +1,24 @@
+// Bootstrap strings are NUL-terminated; indexing returns a byte value.
+fn join(a: str, b: str) -> str {
+    ret str_concat(a, b)
+}
+
+pub fn main() -> i32 {
+    let text := join("native ", "strings")
+    pr(text)
+    pr(text.len)
+    pr(str_len(text))
+    pr(text[0])
+    pr(text[text.len - 1])
+    let nested: str := str_concat(str_concat("a", "b"), str_concat("c", "d"))
+    pr(nested)
+    pr(str_concat("", "left"))
+    pr(str_concat("right", ""))
+    pr(str_concat("", "").len)
+    pr(str_concat("escaped\n", "bytes\t!"))
+    pr(str_concat("a\0ignored", "b"))
+    pr(str_concat("a\0ignored", "b").len)
+    if !str_eq(text, "native strings") { ret 1 }
+    if !str_eq(nested, "abcd") { ret 2 }
+    ret 0
+}

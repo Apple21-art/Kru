@@ -1,0 +1,10 @@
+fn next(counter: *i32) -> i32 { counter@ += 1 ret counter@ }
+fn weighted10(a: i32, b: i32, c: i32, d: i32, e: i32, f: i32, g: i32, h: i32, i: i32, j: i32) -> i32 {
+    ret a + b*2 + c*3 + d*4 + e*5 + f*6 + g*7 + h*8 + i*9 + j*10
+}
+pub fn main() -> i32 {
+    var counter := 0
+    pr(3 + weighted10(next(ref counter), next(ref counter), next(ref counter), next(ref counter), next(ref counter), next(ref counter), next(ref counter), next(ref counter), next(ref counter), next(ref counter)))
+    pr(counter)
+    ret 0
+}

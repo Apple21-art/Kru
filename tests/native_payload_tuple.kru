@@ -1,0 +1,23 @@
+struct Point { x: i32, y: i32 }
+enum Mixed { Empty, Data(bool, Point, [Point; 2], str) }
+enum Other { Empty, Data(i32) }
+fn mixed() -> Mixed {
+    ret Mixed.Data(false, Point { x: 3, y: 4 }, [Point { x: 5, y: 6 }, Point { x: 7, y: 8 }], "tuple")
+}
+pub fn main() -> i32 {
+    match mixed() {
+        Mixed.Data(flag, point, points, text) => {
+            pr(flag)
+            pr(point.x + point.y)
+            pr(points[0].x + points[1].y)
+            pr(text)
+        }
+        Mixed.Empty => { pr(99) }
+    }
+    let o := Other.Data(21)
+    match o { Other.Data(n) => { pr(n * 2) } Other.Empty => { pr(0) } }
+    let nums := [1, 2, 3]
+    pr(nums.len())
+    pr("abc".len())
+    ret 0
+}
