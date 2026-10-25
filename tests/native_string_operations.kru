@@ -1,0 +1,42 @@
+// Strings preserve their byte length, including embedded zero; indexing returns a byte.
+fn join(a: str, b: str) -> str {
+    ret str_concat(a, b)
+}
+
+pub fn main() -> i32 {
+    let text := join("native ", "strings")
+    pr(text)
+    pr(text.len)
+    pr(str_len(text))
+    pr(text[0])
+    pr(text[text.len - 1])
+    let left := str_concat("a", "b")
+    let right := str_concat("c", "d")
+    let nested: str := str_concat(left, right)
+    str_free(left)
+    str_free(right)
+    pr(nested)
+    let tmp0 := str_concat("", "left")
+    pr(tmp0)
+    str_free(tmp0)
+    let tmp1 := str_concat("right", "")
+    pr(tmp1)
+    str_free(tmp1)
+    let tmp2 := str_concat("", "")
+    pr(tmp2.len)
+    str_free(tmp2)
+    let tmp3 := str_concat("escaped\n", "bytes\t!")
+    pr(tmp3)
+    str_free(tmp3)
+    let tmp4 := str_concat("a\0ignored", "b")
+    pr(tmp4)
+    str_free(tmp4)
+    let tmp5 := str_concat("a\0ignored", "b")
+    pr(tmp5.len)
+    str_free(tmp5)
+    if !str_eq(text, "native strings") { ret 1 }
+    if !str_eq(nested, "abcd") { ret 2 }
+    str_free(text)
+    str_free(nested)
+    ret 0
+}

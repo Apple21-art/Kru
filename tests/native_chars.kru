@@ -1,0 +1,16 @@
+struct Text { a: char, marker: u8, b: char }
+fn echo(value: char) -> char {ret value}
+pub fn main() -> i32 {
+    pr('A')
+    pr('字')
+    pr('\u{1F600}')
+    pr(echo('\xFF'))
+    let p := Text { a: '字', marker: 255u8, b: '\u{1F600}' }
+    pr(p.a)
+    pr(p.marker)
+    pr(p.b)
+    pr(cast<u32>('字'))
+    let scalar := 128512u32
+    pr(cast<char>(scalar))
+    ret 0
+}

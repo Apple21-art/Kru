@@ -1,0 +1,12 @@
+fn narrow(value: u64) -> u8 { ret cast<u8>(value) }
+pub fn main() -> i32 {
+    let a := 255u64
+    let b := -128i64
+    pr(narrow(a))
+    pr(cast<i8>(b))
+    pr(cast<u64>(127i8))
+    pr(cast<i64>(9223372036854775807u64))
+    pr(cast<u32>(4294967295u64))
+    pr(cast<usize>(18446744073709551615u64))
+    ret 0
+}

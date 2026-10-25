@@ -1,0 +1,6 @@
+enum Flag { Yes(bool), No }
+fn poison() -> i32 { let a := 2147483647 let b := 2147483647 let c := 2147483647 let d := 2147483647 let e := 2147483647 let f := 2147483647 let g := 2147483647 let h := 2147483647 let i := 2147483647 let j := 2147483647 ret a }
+fn test(v: Flag) -> i32 {
+ match v { Yes(b) => { pr(b) if b { ret 1 } else { ret 0 } } No => { ret 2 } }
+}
+pub fn main() -> i32 { pr(poison()) pr(test(Yes(false))) ret 0 }

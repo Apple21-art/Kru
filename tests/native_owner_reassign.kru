@@ -1,0 +1,13 @@
+struct Owner { value:i32 }
+impl Owner { fn drop(mut ref self) { pr(self.value) } }
+pub fn main()->i32 {
+ var a:=Owner {value:1}
+ a=Owner {value:2}
+ let b:=a
+ a=Owner {value:3}
+ var uninitialized:Owner
+ var assigned:Owner
+ assigned=Owner {value:4}
+ pr(a.value)
+ ret 0
+}

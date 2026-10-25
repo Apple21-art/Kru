@@ -1,0 +1,11 @@
+comptime fn wide()->u64 {ret 42}
+comptime fn fractional()->f64 {var x:=1.5;x+=2.25;x-=0.5;ret x}
+const W:u64:=wide()
+const F:f64:=fractional()
+const DIFFERENT:bool:="alpha"=="beta"
+const SAME:bool:="alpha"=="alpha"
+const ESCAPED:bool:="\u{61}"=="a"
+const EMBEDDED:bool:="a\0b"=="a\0c"
+const FORWARD:str:=LATER
+const LATER:str:="text"
+pub fn main()->i32 {pr(W);pr(F);pr(DIFFERENT);pr(SAME);pr(ESCAPED);pr(EMBEDDED);pr(FORWARD);ret 0}

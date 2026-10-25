@@ -1,0 +1,16 @@
+struct Counter { value:i32 }
+impl Counter {
+ fn new(value:i32)->Counter {ret Counter{value:=value}}
+ fn read(ref self)->i32 {ret self.value}
+ fn add(mut ref self,amount:i32) {self.value += amount}
+ fn twice(self)->i32 {ret self.value*2}
+}
+pub fn main()->i32 {
+ var c:=Counter::new(20)
+ c.add(1)
+ pr(c.read())
+ pr(c.twice())
+ let r:=ref c
+ pr(r.read())
+ ret 0
+}

@@ -1,0 +1,3 @@
+pub fn main() -> i32 { var values: [i32; 2]
+values[0] = 3
+ret 0 }
